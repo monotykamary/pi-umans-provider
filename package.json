@@ -1,0 +1,33 @@
+{
+  "name": "pi-umans-provider",
+  "version": "1.0.0",
+  "description": "UMANS provider extension for pi - Access Kimi K2.6, GLM 5.1, Qwen 3.6, and coding-optimized models through the UMANS API",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "clean": "echo 'nothing to clean'",
+    "build": "echo 'nothing to build'",
+    "check": "echo 'nothing to check'",
+    "update-models": "node scripts/update-models.js"
+  },
+  "keywords": [
+    "pi",
+    "extension",
+    "provider",
+    "umans",
+    "ai",
+    "llm",
+    "kimi",
+    "moonshot",
+    "glm",
+    "qwen",
+    "coding"
+  ],
+  "author": "",
+  "license": "MIT",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "umans-coder": {
+    "input": ["text", "image"],
+    "compat": {
+      "thinkingFormat": "deepseek",
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "requiresReasoningContentOnAssistantMessages": true
+    }
+  },
+  "umans-flash": {
+    "compat": {
+      "thinkingFormat": "deepseek",
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "requiresReasoningContentOnAssistantMessages": true
+    }
+  },
+  "umans-kimi-k2.6": {
+    "input": ["text", "image"],
+    "compat": {
+      "thinkingFormat": "deepseek",
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "requiresReasoningContentOnAssistantMessages": true
+    }
+  },
+  "umans-glm-5.1": {
+    "input": ["text"],
+    "compat": {
+      "thinkingFormat": "deepseek",
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "requiresReasoningContentOnAssistantMessages": true
+    }
+  },
+  "umans-qwen3.6-35b-a3b": {
+    "compat": {
+      "thinkingFormat": "deepseek",
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "requiresReasoningContentOnAssistantMessages": true
+    }
+  }
+}
