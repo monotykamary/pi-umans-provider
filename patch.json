@@ -26,7 +26,7 @@
     }
   },
   "umans-glm-5.1": {
-    "input": ["text"],
+    "input": ["text", "image"],
     "compat": {
       "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
