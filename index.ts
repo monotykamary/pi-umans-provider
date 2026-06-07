@@ -57,6 +57,32 @@ let sessionConcurrentSessions: number | null = null;
 let sessionRequestsInWindow: number | null = null;
 let sessionRemainingRequests: number | null = null;
 
+interface OAuthCredentials {
+  access: string;
+  refresh: string;
+  expires: number;
+}
+
+async function loginUmans(callbacks: any): Promise<OAuthCredentials> {
+  const apiKey = await callbacks.onPrompt({
+    message: "Enter your Umans API key (starts with sk-):",
+  });
+  const key = apiKey.trim();
+  if (!key.startsWith("sk-")) {
+    throw new Error("Invalid API key: must start with 'sk-'");
+  }
+  // API keys don't expire — use a far-future timestamp to prevent unnecessary refresh attempts
+  return { refresh: key, access: key, expires: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000 };
+}
+
+function refreshUmansToken(credentials: OAuthCredentials): Promise<OAuthCredentials> {
+  return Promise.resolve(credentials);
+}
+
+function getApiKey(credentials: OAuthCredentials): string {
+  return credentials.access;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface JsonModel {
@@ -395,6 +421,12 @@ export default function (pi: ExtensionAPI) {
     apiKey: "$UMANS_API_KEY",
     api: "openai-completions",
     models: staleModels,
+    oauth: {
+      name: "Umans AI (API Key)",
+      login: loginUmans,
+      refreshToken: refreshUmansToken,
+      getApiKey: getApiKey,
+    },
   });
 
   function isUmansModel(ctx: any): boolean {
