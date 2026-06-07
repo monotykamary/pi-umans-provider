@@ -362,7 +362,8 @@ async function resolveApiKey(modelRegistry: ModelRegistry): Promise<void> {
 
 const VISION_MODEL = "umans-flash";
 const VISION_PROMPT =
-  "Describe this image in detail. Include any text, code, UI elements, diagrams, errors, or visual content visible. Be specific and thorough.";
+  "You are a vision assistant for a coding agent. Describe this image exhaustively. Cover: all visible text (verbatim if possible), code snippets, UI layout and widgets, diagrams and flow arrows, error messages and stack traces, file trees, terminal output, color and style details, spatial relationships between elements, and anything else a developer would need to act on this image. Do not summarize — be exhaustive.";
+const VISION_USER_PROMPT_PREFIX = "The user's request about this image: "
 const VISION_CACHE_MAX = 50;
 const VISION_HANDOFF_MODELS = new Set(["umans-glm-5.1"]);
 
@@ -372,10 +373,14 @@ function imageHash(imageUrl: string): string {
   return crypto.createHash("sha256").update(imageUrl).digest("hex").slice(0, 32);
 }
 
-async function describeImage(imageUrl: string, apiKey: string): Promise<string> {
+async function describeImage(imageUrl: string, apiKey: string, userPrompt?: string): Promise<string> {
   const key = imageHash(imageUrl);
   const cached = visionCache.get(key);
   if (cached) return cached;
+
+  const promptParts = [VISION_PROMPT];
+  if (userPrompt) promptParts.push(VISION_USER_PROMPT_PREFIX + userPrompt);
+  const promptText = promptParts.join("\n\n");
 
   const promise = (async (): Promise<string> => {
     try {
@@ -392,7 +397,7 @@ async function describeImage(imageUrl: string, apiKey: string): Promise<string> 
             {
               role: "user",
               content: [
-                { type: "text", text: VISION_PROMPT },
+                { type: "text", text: promptText },
                 { type: "image_url", image_url: { url: imageUrl } },
               ],
             },
@@ -576,11 +581,13 @@ export default function (pi: ExtensionAPI) {
 
     // Fire vision calls for all attached images (non-blocking).
     // The promise is cached immediately so before_provider_request can await it.
+    // Include the user's prompt to give the vision model context about what matters.
+    const userPrompt = event.prompt || "";
     for (const image of images) {
       if (image.type !== "image" || image.source?.type !== "base64") continue;
       const dataUrl = imageDataToUrl(image as any);
       if (!dataUrl) continue;
-      describeImage(dataUrl, cachedApiKey).catch(() => {});
+      describeImage(dataUrl, cachedApiKey, userPrompt).catch(() => {});
     }
   });
 
