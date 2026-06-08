@@ -703,17 +703,19 @@ export default function (pi: ExtensionAPI) {
     });
   });
 
-  pi.on("model_select", async (event, ctx) => {
+  pi.on("model_select", (event, ctx) => {
     if (event.model?.provider === "umans") {
-      const usage = await fetchUsage(cachedApiKey);
-      if (usage) {
-        sessionPlan = usage.plan.display_name;
-        sessionConcurrency = usage.limits?.concurrency?.limit ?? null;
-        sessionConcurrentSessions = usage.usage.concurrent_sessions ?? null;
-        sessionRequestsInWindow = usage.usage.requests_in_window ?? null;
-        sessionRemainingRequests = usage.usage.remaining_requests ?? null;
-      }
-      updateUsageStatus(ctx);
+      // Fire-and-forget: don't block model switch on the network request
+      fetchUsage(cachedApiKey).then((usage) => {
+        if (usage) {
+          sessionPlan = usage.plan.display_name;
+          sessionConcurrency = usage.limits?.concurrency?.limit ?? null;
+          sessionConcurrentSessions = usage.usage.concurrent_sessions ?? null;
+          sessionRequestsInWindow = usage.usage.requests_in_window ?? null;
+          sessionRemainingRequests = usage.usage.remaining_requests ?? null;
+        }
+        updateUsageStatus(ctx);
+      });
     } else {
       clearUsageStatus(ctx);
     }
