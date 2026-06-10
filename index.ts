@@ -182,6 +182,18 @@ function applyPatch(model: JsonModel, patch: PatchEntry): JsonModel {
   return result;
 }
 
+// The UMANS API rejects max_tokens equal to the model's hard cap.
+// Since we can't distinguish "recommended" from "hard limit" at this layer,
+// we always subtract a small safety margin to guarantee we stay under.
+const MAX_TOKENS_SAFETY_MARGIN = 1024;
+
+function clampMaxTokens(model: JsonModel): JsonModel {
+  if (model.maxTokens > MAX_TOKENS_SAFETY_MARGIN) {
+    return { ...model, maxTokens: model.maxTokens - MAX_TOKENS_SAFETY_MARGIN };
+  }
+  return model;
+}
+
 function buildModels(base: JsonModel[], custom: JsonModel[], patch: PatchData): JsonModel[] {
   const modelMap = new Map<string, JsonModel>();
 
@@ -210,7 +222,7 @@ function buildModels(base: JsonModel[], custom: JsonModel[], patch: PatchData): 
     }
   }
 
-  return Array.from(modelMap.values());
+  return Array.from(modelMap.values()).map(clampMaxTokens);
 }
 
 // ─── Stale-While-Revalidate Model Sync ────────────────────────────────────────
