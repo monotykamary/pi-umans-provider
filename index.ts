@@ -718,11 +718,15 @@ export default function (pi: ExtensionAPI) {
   });
 
   // The server only reports concurrent_sessions > 0 while a provider request
-  // is actively streaming. message_update fires per-token during streaming,
-  // so throttledFetchUsage here catches the session mid-flight.
-  pi.on("message_update", async (_event, ctx) => {
+  // is actively streaming. message_start fires once per assistant message
+  // when streaming begins — the exact moment the server counts the session.
+  pi.on("message_start", async (event, ctx) => {
+    if (event.message?.role !== "assistant") return;
     if (!isUmansModel(ctx)) return;
-    const usage = await throttledFetchUsage(cachedApiKey);
+    // Brief delay so the server has time to register the active session
+    // before we query its count.
+    await new Promise((r) => setTimeout(r, 2000));
+    const usage = await throttledFetchUsage(cachedApiKey, { force: true });
     if (usage) {
       applyUsage(usage, ctx);
     }
