@@ -1,45 +1,13 @@
 {
   "umans-coder": {
-    "input": ["text", "image"],
-    "compat": {
-      "thinkingFormat": "deepseek",
-      "supportsDeveloperRole": false,
-      "supportsReasoningEffort": true,
-      "requiresReasoningContentOnAssistantMessages": true
-    }
+    "input": ["text", "image"]
   },
-  "umans-flash": {
-    "compat": {
-      "thinkingFormat": "deepseek",
-      "supportsDeveloperRole": false,
-      "supportsReasoningEffort": true,
-      "requiresReasoningContentOnAssistantMessages": true
-    }
-  },
+  "umans-flash": {},
   "umans-kimi-k2.6": {
-    "input": ["text", "image"],
-    "compat": {
-      "thinkingFormat": "deepseek",
-      "supportsDeveloperRole": false,
-      "supportsReasoningEffort": true,
-      "requiresReasoningContentOnAssistantMessages": true
-    }
+    "input": ["text", "image"]
   },
   "umans-glm-5.1": {
-    "input": ["text", "image"],
-    "compat": {
-      "thinkingFormat": "deepseek",
-      "supportsDeveloperRole": false,
-      "supportsReasoningEffort": true,
-      "requiresReasoningContentOnAssistantMessages": true
-    }
+    "input": ["text", "image"]
   },
-  "umans-qwen3.6-35b-a3b": {
-    "compat": {
-      "thinkingFormat": "deepseek",
-      "supportsDeveloperRole": false,
-      "supportsReasoningEffort": true,
-      "requiresReasoningContentOnAssistantMessages": true
-    }
-  }
+  "umans-qwen3.6-35b-a3b": {}
 }

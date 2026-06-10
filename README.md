@@ -15,9 +15,9 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 
 ## Features
 
-- **OpenAI-compatible API** - Uses UMANS's `/v1/chat/completions` endpoint
+- **Anthropic Messages-compatible API** - Uses UMANS's Anthropic Messages endpoint
 - **Reasoning models** - DeepSeek-format thinking with `reasoning_content`
-- **Vision models** - Image input on all models (GLM 5.1 via vision handoff)
+- **Vision models** - Image input on all models (including GLM 5.1 natively)
 - **Tool use** - Function calling support across all models
 - **Streaming** - Real-time token streaming
 - **Subscription-based** - All models included in your plan, no per-token cost
@@ -29,12 +29,10 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 |-------|------|---------|--------|-----------|------------|
 | Coder | Kimi K2.6 | 262K | ✅ | ✅ | 33K |
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
-| GLM 5.1 | GLM-5.1 | 203K | ✅* | ✅ | 131K |
+| GLM 5.1 | GLM-5.1 | 203K | ✅ | ✅ | 131K |
 | Kimi K2.6 | Kimi K2.6 | 262K | ✅ | ✅ | 33K |
 | Qwen3.6 35B A3B | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 
-> \* GLM 5.1 vision uses a handoff pipeline: images are described by `umans-flash` at prompt time, then the text description replaces the image block for GLM.
->
 > **Note:** `umans-flash-beta` is deprecated (sunset 2026-06-07). Use `umans-flash` instead.
 > `umans-qwen3.6-35b-a3b` is a technical alias for `umans-flash`.
 
@@ -83,6 +81,16 @@ Get your API key from [code.umans.ai](https://code.umans.ai).
    pi -e /path/to/pi-umans-provider
    ```
 
+### Option 3: `/login` (recommended — persists in auth.json)
+
+In pi, run:
+
+```
+/login umans
+```
+
+Paste your API key when prompted. It's stored securely in `~/.pi/agent/auth.json` — no env vars needed.
+
 ## Authentication
 
 The UMANS API key can be configured in multiple ways (resolved in this order):
@@ -130,7 +138,7 @@ Or use `/models` to browse all available UMANS models.
 - **`umans-coder`** — Best for complex, coding-heavy workloads. Optimized for coding agents.
 - **`umans-flash`** — Fastest model for low-latency iteration with tools.
 - **`umans-kimi-k2.6`** — Moonshot's native reasoning model with full vision support.
-- **`umans-glm-5.1`** — Reasoning model with large context window and vision via handoff
+- **`umans-glm-5.1`** — Reasoning model with large context window and native vision support.
 
 ### Reasoning Effort
 
@@ -156,22 +164,29 @@ Code Max (Founding Seat) | ⟠ 1/4
 
 The status is fetched from UMANS's `/v1/usage` endpoint on session start and after each agent turn.
 
+## Model Resolution: Stale-While-Revalidate
+
+This extension uses a stale-while-revalidate strategy for model discovery:
+
+1. **Serve stale immediately** — disk cache → embedded `models.json` (zero-latency startup)
+2. **Revalidate in background** — live API `/v1/models/info` → merge with embedded → cache → hot-swap
+3. **Apply patches** — `patch.json` + `custom-models.json` applied on top of whichever source won
+
+Merge order: `[live|cache|embedded]` → apply `patch.json` → merge `custom-models.json`
+
+New models added by Umans appear automatically — no extension update needed.
+
 ## API Compatibility
 
-The UMANS API follows OpenAI conventions with these differences (handled via `patch.json` and `before_provider_request` hook):
+The UMANS API follows Anthropic Messages conventions. pi-ai's transform-messages layer handles message format translation, orphaned tool_use repair, and thinking content management automatically.
 
-| Aspect | OpenAI Native | UMANS |
-|--------|-------------|-------|
-| Thinking format | Varies | `deepseek` (`reasoning_content`) |
-| Developer role | Varies | ❌ Not supported (use system role) |
-| `reasoning_effort` | Varies | ⚠️ Stripped — upstream models don't support it |
-| `requiresReasoningContentOnAssistantMessages` | — | ✅ Required — preserves thinking in history |
-| Pricing | Per-token | Subscription-based ($0/M) |
-| Vision (GLM 5.1) | Direct | ✅ via-handoff — `umans-flash` describes image at prompt time |
-
-The extension also sanitizes orphaned `tool_calls` in conversation history. Context compaction can
-drop tool result messages while keeping the assistant message that made the tool call, causing a
-400 error from the API. The `before_provider_request` hook detects this and inserts synthetic tool results.
+| Aspect | Behavior |
+|--------|----------|
+| API format | Anthropic Messages (`/v1/messages`) |
+| Thinking format | DeepSeek (`reasoning_content`) |
+| Developer role | ❌ Not supported (use system role) |
+| Pricing | Subscription-based ($0/M) |
+| Vision | ✅ All models including GLM 5.1 |
 
 ## Updating Models
 
@@ -186,7 +201,7 @@ This fetches from `/v1/models/info`, updates `models.json`, and regenerates the 
 ## API Documentation
 
 - UMANS: https://code.umans.ai
-- OpenAI-compatible endpoint: `https://api.code.umans.ai/v1`
+- Anthropic Messages endpoint: `https://api.code.umans.ai/v1/messages`
 - Models endpoint: `https://api.code.umans.ai/v1/models`
 - Models info: `https://api.code.umans.ai/v1/models/info`
 - Usage endpoint: `https://api.code.umans.ai/v1/usage`
