@@ -61,8 +61,6 @@ let sessionRequestsInWindow: number | null = null;
 let sessionRemainingRequests: number | null = null;
 let lastUsageFetchTime = 0;
 let usageFetchInFlight = false;
-let usagePollTimer: ReturnType<typeof setInterval> | null = null;
-let usagePollCtx: any = null;
 
 interface OAuthCredentials {
   access: string;
@@ -348,24 +346,9 @@ async function resolveApiKey(modelRegistry: ModelRegistry): Promise<void> {
   cachedApiKey = (await modelRegistry.getApiKeyForProvider("umans")) ?? undefined;
 }
 
-// ─── Vision Handoff ───────────────────────────────────────────────────────────
-//
-// GLM 5.1 cannot process images directly via the raw API. When the user sends
-// an image, umans-flash describes it, and the text description replaces the
-// image block in the provider request for GLM.
-//
-// The vision call fires at the earliest possible moment (before_agent_start),
-// while the agent is still reasoning. By the time before_provider_request
-// fires, the description is usually already cached. If the model is switched
-// to GLM mid-session, any uncached images are described on demand.
-//
-// Pipeline:
-//   1. before_agent_start (user sends image) → fire vision call (async)
-//   2. before_provider_request → swap image blocks with cached descriptions
-//
-// The vision prompt is intentionally tiny (image + 1 sentence) to keep the
-// prefill small and avoid the latency of sending a full conversation history
-// through the vision model.
+// GLM 5.1 vision handoff: before_agent_start fires a vision call to umans-flash
+// (non-blocking), then before_provider_request swaps image blocks with the
+// cached text description. Uncached images are described on demand.
 
 const VISION_MODEL = "umans-flash";
 const VISION_PROMPT =
@@ -530,6 +513,8 @@ function applyUsage(usage: UmansUsage, ctx: any): void {
   updateUsageStatus(ctx);
 }
 
+// Throttled fetch — skips if one is in flight or if the last successful fetch
+// was within USAGE_THROTTLE_MS. Returns null on skip, caller checks.
 async function throttledFetchUsage(
   apiKey: string | undefined,
   options?: { force?: boolean; signal?: AbortSignal },
@@ -549,31 +534,6 @@ async function throttledFetchUsage(
   } finally {
     usageFetchInFlight = false;
   }
-}
-
-function startUsagePoll(ctx: any): void {
-  stopUsagePoll();
-  usagePollCtx = ctx;
-
-  usagePollTimer = setInterval(async () => {
-    if (!cachedApiKey || !usagePollCtx) return;
-    if (usagePollCtx.model?.provider !== "umans") {
-      stopUsagePoll();
-      return;
-    }
-    const usage = await throttledFetchUsage(cachedApiKey);
-    if (usage) {
-      applyUsage(usage, usagePollCtx);
-    }
-  }, USAGE_THROTTLE_MS);
-}
-
-function stopUsagePoll(): void {
-  if (usagePollTimer) {
-    clearInterval(usagePollTimer);
-    usagePollTimer = null;
-  }
-  usagePollCtx = null;
 }
 
 function updateUsageStatus(ctx: any): void {
@@ -631,23 +591,17 @@ export default function (pi: ExtensionAPI) {
     return ctx.model?.provider === "umans";
   }
 
-  // ─── before_agent_start: early vision handoff ───────────────────────────────────
-
   pi.on("before_agent_start", async (event, ctx) => {
     if (!VISION_HANDOFF_MODELS.has(ctx.model?.id ?? "")) return;
 
     const images = event.images;
     if (!images || images.length === 0) return;
 
-    // Resolve API key if not yet cached
     if (!cachedApiKey) {
       cachedApiKey = (await ctx.modelRegistry.getApiKeyForProvider("umans")) ?? undefined;
     }
     if (!cachedApiKey) return;
 
-    // Fire vision calls for all attached images (non-blocking).
-    // The promise is cached immediately so before_provider_request can await it.
-    // Include the user's prompt to give the vision model context about what matters.
     const userPrompt = event.prompt || "";
     for (const image of images) {
       if (image.type !== "image" || !image.data) continue;
@@ -657,34 +611,21 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  // ─── before_provider_request: strip reasoning_effort + vision handoff + sanitize orphaned tool_calls ───
-
   pi.on("before_provider_request", async (event) => {
     const p = event.payload as Record<string, any>;
     const model: string = p.model ?? "";
     if (!model.startsWith("umans-")) return;
 
-    // Strip reasoning_effort — upstream models (Kimi, GLM, Qwen) only understand
-    // the thinking field, not reasoning_effort. pi adds it because
-    // supportsReasoningEffort: true, but the API rejects it.
     if ("reasoning_effort" in p) {
       const { reasoning_effort: _, ...rest } = p as any;
       Object.assign(p, rest);
       delete (p as any).reasoning_effort;
     }
 
-    // Vision handoff: replace image blocks with text descriptions for
-    // models that cannot process images natively (e.g., GLM 5.1).
-    // Descriptions are pre-cached from before_agent_start when possible.
     if (VISION_HANDOFF_MODELS.has(model)) {
       await replaceImagesWithDescriptions(p, cachedApiKey);
     }
 
-    // Sanitize orphaned tool_calls in conversation history.
-    // Context compaction can drop tool result messages while keeping the assistant
-    // message that made the tool call, causing a 400 error:
-    //   "an assistant message with 'tool_calls' must be followed by tool messages
-    //    responding to each 'tool_call_id'"
     const messages = p.messages;
     if (!Array.isArray(messages) || messages.length === 0) return;
 
@@ -731,25 +672,8 @@ export default function (pi: ExtensionAPI) {
     }
 
     p.messages = newMessages;
-
-    // Fetch usage after a short delay — by then the provider request will
-    // be actively streaming and the server will count this session.
-    // This is the only window where concurrent_sessions > 0; all other
-    // hooks fire when the agent is idle and the server sees 0 sessions.
-    if (usagePollCtx) {
-      setTimeout(async () => {
-        if (!usagePollCtx) return;
-        // Force: this is the critical fetch that catches the server mid-stream.
-        // Without force, the throttle silently skips if any fetch ran <30s ago.
-        const usage = await throttledFetchUsage(cachedApiKey, { force: true });
-        if (usage) applyUsage(usage, usagePollCtx);
-      }, 3000);
-    }
-
     return p;
   });
-
-  // ─── Session lifecycle ────────────────────────────────────────────────────────
 
   pi.on("session_start", async (_event, ctx) => {
     revalidateAbort?.abort();
@@ -793,16 +717,15 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  pi.on("agent_start", async (_event, ctx) => {
+  // The server only reports concurrent_sessions > 0 while a provider request
+  // is actively streaming. message_update fires per-token during streaming,
+  // so throttledFetchUsage here catches the session mid-flight.
+  pi.on("message_update", async (_event, ctx) => {
     if (!isUmansModel(ctx)) return;
-    startUsagePoll(ctx);
-  });
-
-  pi.on("agent_end", async (_event, ctx) => {
-    stopUsagePoll();
-    // Don't force-fetch usage here — the server already sees 0 sessions
-    // once the agent is idle, so this would overwrite a correct 1/4 with 0/4.
-    // The last poll or before_provider_request setTimeout value is still valid.
+    const usage = await throttledFetchUsage(cachedApiKey);
+    if (usage) {
+      applyUsage(usage, ctx);
+    }
   });
 
   pi.on("session_tree", async (_event, ctx) => {
@@ -810,7 +733,6 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("session_shutdown", () => {
-    stopUsagePoll();
     revalidateAbort?.abort();
   });
 }
