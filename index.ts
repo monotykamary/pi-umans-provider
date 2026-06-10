@@ -61,6 +61,8 @@ let sessionRequestsInWindow: number | null = null;
 let sessionRemainingRequests: number | null = null;
 let lastUsageFetchTime = 0;
 let usageFetchInFlight = false;
+let usagePollTimer: ReturnType<typeof setInterval> | null = null;
+let usagePollCtx: any = null;
 
 interface OAuthCredentials {
   access: string;
@@ -234,7 +236,7 @@ function transformApiModel(id: string, info: UmansModelInfo): JsonModel | null {
   if (info.deprecation || DEPRECATED_MODELS.has(id)) return null;
 
   const caps = info.capabilities || {};
-  const hasVision = caps.supports_vision === true || caps.supports_vision === "via-handoff";
+  const hasVision = caps.supports_vision === true;
 
   return {
     id,
@@ -452,8 +454,6 @@ async function replaceImagesWithDescriptions(
   const messages = payload.messages;
   if (!Array.isArray(messages)) return;
 
-  let replaced = 0;
-
   for (const msg of messages) {
     if (!Array.isArray(msg.content)) continue;
 
@@ -469,10 +469,8 @@ async function replaceImagesWithDescriptions(
         type: "text",
         text: `[Image: ${description}]`,
       };
-      replaced++;
     }
   }
-
 }
 
 // ─── Usage/Plan Footer ────────────────────────────────────────────────────────
@@ -541,6 +539,30 @@ async function throttledFetchUsage(
   } finally {
     usageFetchInFlight = false;
   }
+}
+
+function startUsagePoll(ctx: any): void {
+  stopUsagePoll();
+  usagePollCtx = ctx;
+  usagePollTimer = setInterval(async () => {
+    if (!cachedApiKey || !usagePollCtx) return;
+    if (usagePollCtx.model?.provider !== "umans") {
+      stopUsagePoll();
+      return;
+    }
+    const usage = await throttledFetchUsage(cachedApiKey);
+    if (usage) {
+      applyUsage(usage, usagePollCtx);
+    }
+  }, USAGE_THROTTLE_MS);
+}
+
+function stopUsagePoll(): void {
+  if (usagePollTimer) {
+    clearInterval(usagePollTimer);
+    usagePollTimer = null;
+  }
+  usagePollCtx = null;
 }
 
 function updateUsageStatus(ctx: any): void {
@@ -745,15 +767,13 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  pi.on("turn_start", async (_event, ctx) => {
+  pi.on("agent_start", async (_event, ctx) => {
     if (!isUmansModel(ctx)) return;
-    const usage = await throttledFetchUsage(cachedApiKey, { signal: ctx.signal });
-    if (usage) {
-      applyUsage(usage, ctx);
-    }
+    startUsagePoll(ctx);
   });
 
   pi.on("agent_end", async (_event, ctx) => {
+    stopUsagePoll();
     if (!isUmansModel(ctx)) return;
     const usage = await throttledFetchUsage(cachedApiKey, { force: true });
     if (usage) {
@@ -768,6 +788,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("session_shutdown", () => {
+    stopUsagePoll();
     revalidateAbort?.abort();
   });
 }

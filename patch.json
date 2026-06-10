@@ -1,6 +1,5 @@
 {
   "umans-coder": {
-    "input": ["text", "image"],
     "compat": {
       "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
@@ -17,7 +16,6 @@
     }
   },
   "umans-kimi-k2.6": {
-    "input": ["text", "image"],
     "compat": {
       "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
