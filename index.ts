@@ -541,18 +541,9 @@ async function throttledFetchUsage(
   }
 }
 
-let usageFirstResponseFetched = false;
-
 function startUsagePoll(ctx: any): void {
   stopUsagePoll();
   usagePollCtx = ctx;
-  usageFirstResponseFetched = false;
-
-  // Immediate first fetch — the server may not count us yet, but if the
-  // session was already active (e.g. model_select mid-run), it will.
-  throttledFetchUsage(cachedApiKey, { force: true }).then((usage) => {
-    if (usage && usagePollCtx) applyUsage(usage, usagePollCtx);
-  });
 
   usagePollTimer = setInterval(async () => {
     if (!cachedApiKey || !usagePollCtx) return;
@@ -730,6 +721,19 @@ export default function (pi: ExtensionAPI) {
     }
 
     p.messages = newMessages;
+
+    // Fetch usage after a short delay — by then the provider request will
+    // be actively streaming and the server will count this session.
+    // This is the only window where concurrent_sessions > 0; all other
+    // hooks fire when the agent is idle and the server sees 0 sessions.
+    if (usagePollCtx) {
+      setTimeout(async () => {
+        if (!usagePollCtx) return;
+        const usage = await throttledFetchUsage(cachedApiKey);
+        if (usage) applyUsage(usage, usagePollCtx);
+      }, 3000);
+    }
+
     return p;
   });
 
@@ -782,18 +786,7 @@ export default function (pi: ExtensionAPI) {
     startUsagePoll(ctx);
   });
 
-  pi.on("after_provider_response", async (event, ctx) => {
-    if (event.status < 200 || event.status >= 300) return;
-    if (!isUmansModel(ctx)) return;
-    // The server now counts this session — fetch once on first successful
-    // response, then let the polling interval handle the rest.
-    if (usageFirstResponseFetched) return;
-    usageFirstResponseFetched = true;
-    const usage = await throttledFetchUsage(cachedApiKey, { force: true });
-    if (usage) {
-      applyUsage(usage, ctx);
-    }
-  });
+
 
   pi.on("agent_end", async (_event, ctx) => {
     stopUsagePoll();
