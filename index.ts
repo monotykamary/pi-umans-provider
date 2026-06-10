@@ -541,9 +541,19 @@ async function throttledFetchUsage(
   }
 }
 
+let usageFirstResponseFetched = false;
+
 function startUsagePoll(ctx: any): void {
   stopUsagePoll();
   usagePollCtx = ctx;
+  usageFirstResponseFetched = false;
+
+  // Immediate first fetch — the server may not count us yet, but if the
+  // session was already active (e.g. model_select mid-run), it will.
+  throttledFetchUsage(cachedApiKey, { force: true }).then((usage) => {
+    if (usage && usagePollCtx) applyUsage(usage, usagePollCtx);
+  });
+
   usagePollTimer = setInterval(async () => {
     if (!cachedApiKey || !usagePollCtx) return;
     if (usagePollCtx.model?.provider !== "umans") {
@@ -770,6 +780,19 @@ export default function (pi: ExtensionAPI) {
   pi.on("agent_start", async (_event, ctx) => {
     if (!isUmansModel(ctx)) return;
     startUsagePoll(ctx);
+  });
+
+  pi.on("after_provider_response", async (event, ctx) => {
+    if (event.status < 200 || event.status >= 300) return;
+    if (!isUmansModel(ctx)) return;
+    // The server now counts this session — fetch once on first successful
+    // response, then let the polling interval handle the rest.
+    if (usageFirstResponseFetched) return;
+    usageFirstResponseFetched = true;
+    const usage = await throttledFetchUsage(cachedApiKey, { force: true });
+    if (usage) {
+      applyUsage(usage, ctx);
+    }
   });
 
   pi.on("agent_end", async (_event, ctx) => {
