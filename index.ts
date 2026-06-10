@@ -52,12 +52,15 @@ import path from "path";
 
 const USAGE_API_URL = "https://api.code.umans.ai/v1/usage";
 const USAGE_FETCH_TIMEOUT_MS = 5000;
+const USAGE_THROTTLE_MS = 30_000;
 
 let sessionPlan: string | null = null;
 let sessionConcurrency: number | null = null;
 let sessionConcurrentSessions: number | null = null;
 let sessionRequestsInWindow: number | null = null;
 let sessionRemainingRequests: number | null = null;
+let lastUsageFetchTime = 0;
+let usageFetchInFlight = false;
 
 interface OAuthCredentials {
   access: string;
@@ -510,6 +513,36 @@ async function fetchUsage(
   }
 }
 
+function applyUsage(usage: UmansUsage, ctx: any): void {
+  sessionPlan = usage.plan.display_name;
+  sessionConcurrency = usage.limits?.concurrency?.limit ?? null;
+  sessionConcurrentSessions = usage.usage.concurrent_sessions ?? null;
+  sessionRequestsInWindow = usage.usage.requests_in_window ?? null;
+  sessionRemainingRequests = usage.usage.remaining_requests ?? null;
+  updateUsageStatus(ctx);
+}
+
+async function throttledFetchUsage(
+  apiKey: string | undefined,
+  options?: { force?: boolean; signal?: AbortSignal },
+): Promise<UmansUsage | null> {
+  const now = Date.now();
+  const { force = false, signal } = options ?? {};
+  if (!force && (usageFetchInFlight || now - lastUsageFetchTime < USAGE_THROTTLE_MS)) {
+    return null;
+  }
+  usageFetchInFlight = true;
+  try {
+    const usage = await fetchUsage(apiKey, signal);
+    if (usage) {
+      lastUsageFetchTime = now;
+    }
+    return usage;
+  } finally {
+    usageFetchInFlight = false;
+  }
+}
+
 function updateUsageStatus(ctx: any): void {
   if (ctx.model?.provider !== "umans") {
     ctx.ui.setStatus("umans-usage", undefined);
@@ -691,44 +724,43 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const usage = await fetchUsage(cachedApiKey, signal);
+      const usage = await throttledFetchUsage(cachedApiKey, { force: true, signal });
       if (usage && !signal.aborted) {
-        sessionPlan = usage.plan.display_name;
-        sessionConcurrency = usage.limits?.concurrency?.limit ?? null;
-        sessionConcurrentSessions = usage.usage.concurrent_sessions ?? null;
-        sessionRequestsInWindow = usage.usage.requests_in_window ?? null;
-        sessionRemainingRequests = usage.usage.remaining_requests ?? null;
-        updateUsageStatus(ctx);
+        applyUsage(usage, ctx);
       }
     });
   });
 
   pi.on("model_select", (event, ctx) => {
     if (event.model?.provider === "umans") {
-      // Fire-and-forget: don't block model switch on the network request
-      fetchUsage(cachedApiKey).then((usage) => {
+      throttledFetchUsage(cachedApiKey, { force: true }).then((usage) => {
         if (usage) {
-          sessionPlan = usage.plan.display_name;
-          sessionConcurrency = usage.limits?.concurrency?.limit ?? null;
-          sessionConcurrentSessions = usage.usage.concurrent_sessions ?? null;
-          sessionRequestsInWindow = usage.usage.requests_in_window ?? null;
-          sessionRemainingRequests = usage.usage.remaining_requests ?? null;
+          applyUsage(usage, ctx);
+        } else {
+          updateUsageStatus(ctx);
         }
-        updateUsageStatus(ctx);
       });
     } else {
       clearUsageStatus(ctx);
     }
   });
 
-  pi.on("agent_end", async (_event, ctx) => {
-    const usage = await fetchUsage(cachedApiKey);
+  pi.on("turn_start", async (_event, ctx) => {
+    if (!isUmansModel(ctx)) return;
+    const usage = await throttledFetchUsage(cachedApiKey, { signal: ctx.signal });
     if (usage) {
-      sessionConcurrentSessions = usage.usage.concurrent_sessions ?? null;
-      sessionRequestsInWindow = usage.usage.requests_in_window ?? null;
-      sessionRemainingRequests = usage.usage.remaining_requests ?? null;
+      applyUsage(usage, ctx);
     }
-    updateUsageStatus(ctx);
+  });
+
+  pi.on("agent_end", async (_event, ctx) => {
+    if (!isUmansModel(ctx)) return;
+    const usage = await throttledFetchUsage(cachedApiKey, { force: true });
+    if (usage) {
+      applyUsage(usage, ctx);
+    } else {
+      updateUsageStatus(ctx);
+    }
   });
 
   pi.on("session_tree", async (_event, ctx) => {
