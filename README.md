@@ -154,7 +154,7 @@ Code Max (Founding Seat) | ⟠ 1/4
 - **`⟠ N/M`** — Active concurrent sessions / max concurrent sessions
 - **`⇄ N`** — Remaining requests in the current window (shown when limited)
 
-The status is fetched from UMANS's `/v1/usage` endpoint on session start, polled every 30 seconds while the agent is active, and refreshed when the agent finishes.
+The status is fetched from UMANS's `/v1/usage` endpoint on session start and while provider requests are actively streaming (the only window where the server reports concurrent sessions).
 
 ## API Compatibility
 

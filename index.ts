@@ -476,6 +476,7 @@ async function replaceImagesWithDescriptions(
 // ─── Usage/Plan Footer ────────────────────────────────────────────────────────
 
 interface UmansUsage {
+  user_id?: string;
   plan: { slug: string; display_name: string };
   limits: {
     requests: { limit: number | null; window_seconds: number; description: string };
@@ -483,11 +484,20 @@ interface UmansUsage {
   };
   usage: {
     requests_in_window: number;
-    weighted_in_window: number;
+    weighted_in_window?: number;
     remaining_requests: number | null;
+    weighted_remaining_requests?: number | null;
     concurrent_sessions: number;
+    weighted_concurrent_sessions?: number;
+    tokens_in?: number;
+    tokens_out?: number;
+    tokens_cached?: number;
   };
-  window?: { remaining_minutes?: number };
+  window?: {
+    started_at?: string;
+    resets_at?: string;
+    remaining_minutes?: number;
+  };
 }
 
 async function fetchUsage(
@@ -729,7 +739,9 @@ export default function (pi: ExtensionAPI) {
     if (usagePollCtx) {
       setTimeout(async () => {
         if (!usagePollCtx) return;
-        const usage = await throttledFetchUsage(cachedApiKey);
+        // Force: this is the critical fetch that catches the server mid-stream.
+        // Without force, the throttle silently skips if any fetch ran <30s ago.
+        const usage = await throttledFetchUsage(cachedApiKey, { force: true });
         if (usage) applyUsage(usage, usagePollCtx);
       }, 3000);
     }
@@ -786,17 +798,11 @@ export default function (pi: ExtensionAPI) {
     startUsagePoll(ctx);
   });
 
-
-
   pi.on("agent_end", async (_event, ctx) => {
     stopUsagePoll();
-    if (!isUmansModel(ctx)) return;
-    const usage = await throttledFetchUsage(cachedApiKey, { force: true });
-    if (usage) {
-      applyUsage(usage, ctx);
-    } else {
-      updateUsageStatus(ctx);
-    }
+    // Don't force-fetch usage here — the server already sees 0 sessions
+    // once the agent is idle, so this would overwrite a correct 1/4 with 0/4.
+    // The last poll or before_provider_request setTimeout value is still valid.
   });
 
   pi.on("session_tree", async (_event, ctx) => {
