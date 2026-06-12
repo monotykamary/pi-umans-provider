@@ -23,6 +23,12 @@
       "requiresReasoningContentOnAssistantMessages": true
     }
   },
+  "umans-kimi-k2.7": {
+    "compat": {
+      "maxTokensField": "max_tokens",
+      "thinkingFormat": "deepseek"
+    }
+  },
   "umans-glm-5.1": {
     "input": ["text", "image"],
     "compat": {
