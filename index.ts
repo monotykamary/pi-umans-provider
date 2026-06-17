@@ -355,7 +355,7 @@ const VISION_PROMPT =
   "You are a vision assistant for a coding agent. Describe this image exhaustively. Cover: all visible text (verbatim if possible), code snippets, UI layout and widgets, diagrams and flow arrows, error messages and stack traces, file trees, terminal output, color and style details, spatial relationships between elements, and anything else a developer would need to act on this image. Do not summarize — be exhaustive.";
 const VISION_USER_PROMPT_PREFIX = "The user's request about this image: "
 const VISION_CACHE_MAX = 50;
-const VISION_HANDOFF_MODELS = new Set(["umans-glm-5.1"]);
+const VISION_HANDOFF_MODELS = new Set(["umans-glm-5.1", "umans-glm-5.2"]);
 
 const visionCache = new Map<string, Promise<string>>();
 

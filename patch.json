@@ -30,7 +30,29 @@
     }
   },
   "umans-glm-5.1": {
-    "input": ["text", "image"],
+    "input": [
+      "text",
+      "image"
+    ],
+    "compat": {
+      "thinkingFormat": "deepseek",
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "requiresReasoningContentOnAssistantMessages": true
+    }
+  },
+  "umans-glm-5.2": {
+    "input": [
+      "text",
+      "image"
+    ],
+    "thinkingLevelMap": {
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "max"
+    },
     "compat": {
       "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
