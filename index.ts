@@ -5,16 +5,16 @@
  * openai-completions API. Base URL: https://api.code.umans.ai/v1
  *
  * UMANS provides subscription-based access to coding-optimized models.
- * All models support tool use. Reasoning models use the DeepSeek thinking
- * format (thinking content in reasoning_content field).
+ * All models support tool use. Reasoning is controlled via `reasoning_effort`
+ * and surfaced in a `reasoning_content` field (DeepSeek-style response field).
  *
  * Key API details:
- *   - Uses `max_tokens` (NOT `max_completion_tokens`) — the latter is silently ignored
- *   - All reasoning models return `reasoning_content` in DeepSeek format
+ *   - Reasoning via `reasoning_effort` (none/low/medium/high; minimal/xhigh accepted and mapped to nearest). Default thinking level: `medium`.
+ *   - All reasoning models return `reasoning_content` (parsed regardless of thinking format).
+ *   - `max_completion_tokens` (and `max_tokens`) are both honored on the OpenAI route; default `max_completion_tokens` is used.
  *   - Developer role is NOT supported (use system role instead)
  *   - Subscription-based: $0 per-token cost
  *   - `umans-flash-beta` is deprecated (sunset 2026-06-07, use `umans-flash`)
- *   - `reasoning_effort` is NOT supported by upstream models — stripped in before_provider_request
  *
  * Model resolution strategy: Stale-While-Revalidate
  *   1. Serve stale immediately: disk cache → embedded models.json (zero-latency)
@@ -483,12 +483,6 @@ export default function (pi: ExtensionAPI) {
     const p = event.payload as Record<string, any>;
     const model: string = p.model ?? "";
     if (!model.startsWith("umans-")) return;
-
-    if ("reasoning_effort" in p) {
-      const { reasoning_effort: _, ...rest } = p as any;
-      Object.assign(p, rest);
-      delete (p as any).reasoning_effort;
-    }
 
     const messages = p.messages;
     if (!Array.isArray(messages) || messages.length === 0) return;

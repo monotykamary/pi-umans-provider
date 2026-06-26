@@ -16,7 +16,7 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 ## Features
 
 - **OpenAI-compatible API** - Uses UMANS's `/v1/chat/completions` endpoint
-- **Reasoning models** - DeepSeek-format thinking with `reasoning_content`
+- **Reasoning models** - `reasoning_effort`-controlled thinking, surfaced as `reasoning_content`
 - **Vision models** - Image input on all models
 - **Tool use** - Function calling support across all models
 - **Streaming** - Real-time token streaming
@@ -127,7 +127,7 @@ Or use `/models` to browse all available UMANS models.
 
 - **`umans-coder`** — Best for complex, coding-heavy workloads. Optimized for coding agents.
 - **`umans-flash`** — Fastest model for low-latency iteration with tools.
-- **`umans-kimi-k2.6`** — Moonshot's native reasoning model with full vision support.
+- **`umans-kimi-k2.7`** — Moonshot's Kimi K2.7-Code for the hardest, multi-step coding tasks. Reasoning is always on.
 
 ### Reasoning Effort
 
@@ -137,7 +137,7 @@ For reasoning models, control thinking depth:
 /reasoning high
 ```
 
-Values: `none`, `low`, `medium`, `high`
+Levels: `off`, `minimal`, `low`, `medium`, `high` (default: `medium`). `off` disables reasoning (maps to `reasoning_effort: none`); `minimal` is mapped to the nearest UMANS level.
 
 ## Usage Status Bar
 
@@ -159,9 +159,9 @@ The UMANS API follows OpenAI conventions with these differences (handled via `pa
 
 | Aspect | OpenAI Native | UMANS |
 |--------|-------------|-------|
-| Thinking format | Varies | `deepseek` (`reasoning_content`) |
+| Reasoning control | `reasoning_effort` | `reasoning_effort` (`none`/`low`/`medium`/`high`; default `medium`) |
 | Developer role | Varies | ❌ Not supported (use system role) |
-| `reasoning_effort` | Varies | ⚠️ Stripped — upstream models don't support it |
+| Reasoning content | `reasoning_content` | `reasoning_content` (DeepSeek-style field) |
 | `requiresReasoningContentOnAssistantMessages` | — | ✅ Required — preserves thinking in history |
 | Pricing | Per-token | Subscription-based ($0/M) |
 

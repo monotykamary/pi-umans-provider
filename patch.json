@@ -1,60 +1,55 @@
 {
   "umans-coder": {
+    "thinkingLevelMap": { "off": "none" },
     "compat": {
-      "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
       "requiresReasoningContentOnAssistantMessages": true
     }
   },
   "umans-flash": {
+    "thinkingLevelMap": { "off": "none" },
     "compat": {
-      "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
       "requiresReasoningContentOnAssistantMessages": true
     }
   },
   "umans-kimi-k2.6": {
+    "thinkingLevelMap": { "off": "none" },
     "compat": {
-      "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
       "requiresReasoningContentOnAssistantMessages": true
     }
   },
   "umans-kimi-k2.7": {
+    "thinkingLevelMap": { "off": "none" },
     "compat": {
-      "maxTokensField": "max_tokens",
-      "thinkingFormat": "deepseek"
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "requiresReasoningContentOnAssistantMessages": true
     }
   },
   "umans-glm-5.1": {
+    "thinkingLevelMap": { "off": "none" },
     "compat": {
-      "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
       "requiresReasoningContentOnAssistantMessages": true
     }
   },
   "umans-glm-5.2": {
-    "thinkingLevelMap": {
-      "minimal": "minimal",
-      "low": "low",
-      "medium": "medium",
-      "high": "high",
-      "xhigh": "max"
-    },
+    "thinkingLevelMap": { "off": "none" },
     "compat": {
-      "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
       "requiresReasoningContentOnAssistantMessages": true
     }
   },
   "umans-qwen3.6-35b-a3b": {
+    "thinkingLevelMap": { "off": "none" },
     "compat": {
-      "thinkingFormat": "deepseek",
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
       "requiresReasoningContentOnAssistantMessages": true
