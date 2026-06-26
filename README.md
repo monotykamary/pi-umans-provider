@@ -151,7 +151,7 @@ Code Max (Founding Seat) | ⟠ 1/4
 - **`⟠ N/M`** — Active concurrent sessions / max concurrent sessions
 - **`⇄ N`** — Remaining requests in the current window (shown when limited)
 
-The status is fetched from UMANS's `/v1/usage` endpoint on session start and while provider requests are actively streaming (the only window where the server reports concurrent sessions).
+The concurrent-session count is tracked locally: it's optimistically incremented the moment an agent run starts (no API call needed — the server has a brief registration lag anyway), reconciled with UMANS's `/v1/usage` endpoint after each agent run ends, and lightly polled while idle so the baseline stays fresh. The plan name and request budget are fetched on session start and model selection.
 
 ## API Compatibility
 

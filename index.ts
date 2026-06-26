@@ -51,14 +51,19 @@ import path from "path";
 const USAGE_API_URL = "https://api.code.umans.ai/v1/usage";
 const USAGE_FETCH_TIMEOUT_MS = 5000;
 const USAGE_THROTTLE_MS = 30_000;
+const END_SETTLE_MS = 2000;
+const IDLE_POLL_MS = 45_000;
 
 let sessionPlan: string | null = null;
 let sessionConcurrency: number | null = null;
-let sessionConcurrentSessions: number | null = null;
+let sessionOthers: number | null = null;
+let activeStreams = 0;
 let sessionRequestsInWindow: number | null = null;
 let sessionRemainingRequests: number | null = null;
 let lastUsageFetchTime = 0;
 let usageFetchInFlight = false;
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let endFetchTimer: ReturnType<typeof setTimeout> | null = null;
 
 interface OAuthCredentials {
   access: string;
@@ -395,10 +400,18 @@ async function fetchUsage(
 function applyUsage(usage: UmansUsage, ctx: any): void {
   sessionPlan = usage.plan.display_name;
   sessionConcurrency = usage.limits?.concurrency?.limit ?? null;
-  sessionConcurrentSessions = usage.usage.concurrent_sessions ?? null;
+  // Only adopt the server's concurrent count as our idle baseline when we're
+  // not streaming — otherwise it already includes us and would double-count
+  // against activeStreams in the display.
+  if (activeStreams === 0) {
+    sessionOthers = usage.usage.concurrent_sessions ?? 0;
+  }
   sessionRequestsInWindow = usage.usage.requests_in_window ?? null;
   sessionRemainingRequests = usage.usage.remaining_requests ?? null;
   updateUsageStatus(ctx);
+  if (activeStreams === 0) {
+    resetIdleTimer(ctx);
+  }
 }
 
 // Throttled fetch — skips if one is in flight or if the last successful fetch
@@ -435,7 +448,7 @@ function updateUsageStatus(ctx: any): void {
   }
   const parts: string[] = [sessionPlan];
   if (sessionConcurrency != null) {
-    parts.push(`\u27e0 ${(sessionConcurrentSessions ?? 0)}/${sessionConcurrency}`);
+    parts.push(`\u27e0 ${(sessionOthers ?? 0) + activeStreams}/${sessionConcurrency}`);
   }
   if (sessionRemainingRequests != null) {
     parts.push(`\u21c4 ${sessionRemainingRequests}`);
@@ -446,10 +459,48 @@ function updateUsageStatus(ctx: any): void {
 function clearUsageStatus(ctx: any): void {
   sessionPlan = null;
   sessionConcurrency = null;
-  sessionConcurrentSessions = null;
+  sessionOthers = null;
+  activeStreams = 0;
   sessionRequestsInWindow = null;
   sessionRemainingRequests = null;
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+  if (endFetchTimer) {
+    clearTimeout(endFetchTimer);
+    endFetchTimer = null;
+  }
   ctx.ui.setStatus("umans-usage", undefined);
+}
+
+// Light idle poll: refresh the server baseline (others) while nothing is
+// streaming, so the optimistic +active sits on a fresh base. Self-rearming.
+function resetIdleTimer(ctx: any): void {
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(async () => {
+    idleTimer = null;
+    // Skip while streaming — the optimistic value is in effect and agent_end
+    // will reconcile with a real fetch.
+    if (activeStreams > 0) return;
+    const usage = await throttledFetchUsage(cachedApiKey);
+    if (usage) {
+      applyUsage(usage, ctx);
+    }
+  }, IDLE_POLL_MS);
+}
+
+// After agent_end the server still counts our session for a brief lag. Wait
+// it out, then take a clean idle baseline and re-arm the idle poll.
+function scheduleEndFetch(ctx: any): void {
+  if (endFetchTimer) clearTimeout(endFetchTimer);
+  endFetchTimer = setTimeout(async () => {
+    endFetchTimer = null;
+    const usage = await throttledFetchUsage(cachedApiKey, { force: true });
+    if (usage) {
+      applyUsage(usage, ctx);
+    }
+  }, END_SETTLE_MS);
 }
 
 // ─── Extension Entry Point ────────────────────────────────────────────────────
@@ -575,19 +626,27 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  // The server only reports concurrent_sessions > 0 while a provider request
-  // is actively streaming. message_start fires once per assistant message
-  // when streaming begins — the exact moment the server counts the session.
-  pi.on("message_start", async (event, ctx) => {
-    if (event.message?.role !== "assistant") return;
+  // Optimistic +1: the moment our agent starts, we know the real concurrent
+  // count is at least (others + 1). No API call — the server has a ~2s
+  // registration lag, so fetching now would undercount us anyway. One span
+  // per prompt (agent_start → agent_end), so no flicker between tool turns.
+  pi.on("agent_start", async (_event, ctx) => {
     if (!isUmansModel(ctx)) return;
-    // Brief delay so the server has time to register the active session
-    // before we query its count.
-    await new Promise((r) => setTimeout(r, 2000));
-    const usage = await throttledFetchUsage(cachedApiKey, { force: true });
-    if (usage) {
-      applyUsage(usage, ctx);
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
     }
+    activeStreams++;
+    updateUsageStatus(ctx);
+  });
+
+  // Turn ended: drop our optimistic +1 and reconcile with the server after a
+  // short settle so the server has dropped our session from its count.
+  pi.on("agent_end", async (_event, ctx) => {
+    if (!isUmansModel(ctx)) return;
+    activeStreams = Math.max(0, activeStreams - 1);
+    updateUsageStatus(ctx);
+    scheduleEndFetch(ctx);
   });
 
   pi.on("session_tree", async (_event, ctx) => {
@@ -596,5 +655,14 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_shutdown", () => {
     revalidateAbort?.abort();
+    activeStreams = 0;
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+    if (endFetchTimer) {
+      clearTimeout(endFetchTimer);
+      endFetchTimer = null;
+    }
   });
 }
