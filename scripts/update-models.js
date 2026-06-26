@@ -32,7 +32,7 @@ function transformApiModel(id, info) {
   if (info.deprecation || DEPRECATED_MODELS.has(id)) return null;
 
   const caps = info.capabilities || {};
-  const hasVision = caps.supports_vision === true || caps.supports_vision === "via-handoff";
+  const hasVision = caps.supports_vision === true;
 
   return {
     id,
@@ -204,7 +204,7 @@ async function main() {
           ...model,
           // Preserve curated fields that the API doesn't provide
           reasoning: typeof existing.reasoning === "boolean" ? existing.reasoning : model.reasoning,
-          input: existing.input || model.input,
+          input: model.input,
           maxTokens: existing.maxTokens || model.maxTokens,
           _meta: model._meta, // Keep API-derived _meta for README
         };

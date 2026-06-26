@@ -17,7 +17,7 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 
 - **OpenAI-compatible API** - Uses UMANS's `/v1/chat/completions` endpoint
 - **Reasoning models** - DeepSeek-format thinking with `reasoning_content`
-- **Vision models** - Image input on all models (GLM 5.1 via vision handoff)
+- **Vision models** - Image input on all models
 - **Tool use** - Function calling support across all models
 - **Streaming** - Real-time token streaming
 - **Subscription-based** - All models included in your plan, no per-token cost
@@ -29,12 +29,10 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 |-------|------|---------|--------|-----------|------------|
 | Coder | Kimi K2.7-Code | 262K | ✅ | ✅ | 33K |
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
-| GLM 5.2 | GLM-5.2 | 406K | ✅ | ✅ | 131K |
+| GLM 5.2 | GLM-5.2 | 406K | ❌ | ✅ | 131K |
 | Kimi K2.7 Code | Kimi K2.7-Code | 262K | ✅ | ✅ | 33K |
 | Qwen3.6 35B A3B | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 
-> \* GLM 5.1 vision uses a handoff pipeline: images are described by `umans-flash` at prompt time, then the text description replaces the image block for GLM.
->
 > **Note:** `umans-flash-beta` is deprecated (sunset 2026-06-07). Use `umans-flash` instead.
 > `umans-qwen3.6-35b-a3b` is a technical alias for `umans-flash`.
 
@@ -130,7 +128,6 @@ Or use `/models` to browse all available UMANS models.
 - **`umans-coder`** — Best for complex, coding-heavy workloads. Optimized for coding agents.
 - **`umans-flash`** — Fastest model for low-latency iteration with tools.
 - **`umans-kimi-k2.6`** — Moonshot's native reasoning model with full vision support.
-- **`umans-glm-5.1`** — Reasoning model with large context window and vision via handoff
 
 ### Reasoning Effort
 
@@ -167,7 +164,6 @@ The UMANS API follows OpenAI conventions with these differences (handled via `pa
 | `reasoning_effort` | Varies | ⚠️ Stripped — upstream models don't support it |
 | `requiresReasoningContentOnAssistantMessages` | — | ✅ Required — preserves thinking in history |
 | Pricing | Per-token | Subscription-based ($0/M) |
-| Vision (GLM 5.1) | Direct | ✅ via-handoff — `umans-flash` describes image at prompt time |
 
 The extension also sanitizes orphaned `tool_calls` in conversation history. Context compaction can
 drop tool result messages while keeping the assistant message that made the tool call, causing a

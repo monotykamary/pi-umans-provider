@@ -38,8 +38,7 @@
     "name": "Umans GLM 5.2",
     "reasoning": true,
     "input": [
-      "text",
-      "image"
+      "text"
     ],
     "cost": {
       "input": 0,
