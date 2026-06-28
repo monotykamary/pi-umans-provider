@@ -30,6 +30,7 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | Coder | Kimi K2.7-Code | 262K | ✅ | ✅ | 33K |
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | GLM 5.2 | GLM-5.2 | 406K | ❌ | ✅ | 131K |
+| GLM 5.2 NVFP4 (experimental, short test from Jun 29) | GLM-5.2 | 406K | ❌ | ✅ | 131K |
 | Kimi K2.7 Code | Kimi K2.7-Code | 262K | ✅ | ✅ | 33K |
 | Qwen3.6 35B A3B | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 
