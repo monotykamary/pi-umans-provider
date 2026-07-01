@@ -355,6 +355,10 @@ async function revalidateModels(
 
 let cachedApiKey: string | undefined;
 let revalidateAbort: AbortController | null = null;
+// Aborted on session replacement/shutdown so in-flight usage fetches from
+// timers don't resolve against a stale ctx (the timer handle itself can't be
+// clearTimeout'd once the async callback has already fired).
+let usageAbort: AbortController | null = null;
 
 async function resolveApiKey(modelRegistry: ModelRegistry): Promise<void> {
   cachedApiKey = (await modelRegistry.getApiKeyForProvider("umans")) ?? undefined;
@@ -449,12 +453,20 @@ async function throttledFetchUsage(
 }
 
 function updateUsageStatus(ctx: any): void {
-  if (ctx.model?.provider !== "umans") {
-    ctx.ui.setStatus("umans-usage", undefined);
+  // Defensive: a stale ctx (post session replacement/reload) throws on access.
+  // Never let a timer-driven status refresh take down the process.
+  let model: any;
+  try {
+    model = ctx.model;
+  } catch {
+    return;
+  }
+  if (model?.provider !== "umans") {
+    try { ctx.ui.setStatus("umans-usage", undefined); } catch {}
     return;
   }
   if (!sessionPlan) {
-    ctx.ui.setStatus("umans-usage", undefined);
+    try { ctx.ui.setStatus("umans-usage", undefined); } catch {}
     return;
   }
   const parts: string[] = [sessionPlan];
@@ -464,10 +476,13 @@ function updateUsageStatus(ctx: any): void {
   if (sessionRemainingRequests != null) {
     parts.push(`\u21c4 ${sessionRemainingRequests}`);
   }
-  ctx.ui.setStatus("umans-usage", ctx.ui.theme.fg("dim", parts.join(" | ")));
+  try {
+    ctx.ui.setStatus("umans-usage", ctx.ui.theme.fg("dim", parts.join(" | ")));
+  } catch {}
 }
 
 function clearUsageStatus(ctx: any): void {
+  try { ctx.ui.setStatus("umans-usage", undefined); } catch {}
   sessionPlan = null;
   sessionConcurrency = null;
   sessionOthers = null;
@@ -482,22 +497,22 @@ function clearUsageStatus(ctx: any): void {
     clearTimeout(endFetchTimer);
     endFetchTimer = null;
   }
-  ctx.ui.setStatus("umans-usage", undefined);
 }
 
 // Light idle poll: refresh the server baseline (others) while nothing is
 // streaming, so the optimistic +active sits on a fresh base. Self-rearming.
 function resetIdleTimer(ctx: any): void {
   if (idleTimer) clearTimeout(idleTimer);
+  const signal = usageAbort?.signal;
   idleTimer = setTimeout(async () => {
     idleTimer = null;
     // Skip while streaming — the optimistic value is in effect and agent_end
     // will reconcile with a real fetch.
     if (activeStreams > 0) return;
-    const usage = await throttledFetchUsage(cachedApiKey);
-    if (usage) {
-      applyUsage(usage, ctx);
-    }
+    if (signal?.aborted) return;
+    const usage = await throttledFetchUsage(cachedApiKey, { signal });
+    if (!usage || signal?.aborted) return;
+    applyUsage(usage, ctx);
   }, IDLE_POLL_MS);
 }
 
@@ -505,12 +520,13 @@ function resetIdleTimer(ctx: any): void {
 // it out, then take a clean idle baseline and re-arm the idle poll.
 function scheduleEndFetch(ctx: any): void {
   if (endFetchTimer) clearTimeout(endFetchTimer);
+  const signal = usageAbort?.signal;
   endFetchTimer = setTimeout(async () => {
     endFetchTimer = null;
-    const usage = await throttledFetchUsage(cachedApiKey, { force: true });
-    if (usage) {
-      applyUsage(usage, ctx);
-    }
+    if (signal?.aborted) return;
+    const usage = await throttledFetchUsage(cachedApiKey, { force: true, signal });
+    if (!usage || signal?.aborted) return;
+    applyUsage(usage, ctx);
   }, END_SETTLE_MS);
 }
 
@@ -598,6 +614,10 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     revalidateAbort?.abort();
     revalidateAbort = new AbortController();
+    // Cancel any usage fetches/timers still running from a prior session —
+    // their captured ctx is now stale.
+    usageAbort?.abort();
+    usageAbort = new AbortController();
     const signal = revalidateAbort.signal;
     resolveApiKey(ctx.modelRegistry).then(async () => {
       revalidateModels(cachedApiKey, embeddedModels, signal).then((freshBase) => {
@@ -666,6 +686,8 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_shutdown", () => {
     revalidateAbort?.abort();
+    usageAbort?.abort();
+    usageAbort = null;
     activeStreams = 0;
     if (idleTimer) {
       clearTimeout(idleTimer);
