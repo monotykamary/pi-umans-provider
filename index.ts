@@ -37,13 +37,12 @@
  * @see https://code.umans.ai
  */
 
-import type { ExtensionAPI, ModelRegistry } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, type ExtensionAPI, type ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { OAuthLoginCallbacks } from "@earendil-works/pi-ai";
 import modelsData from "./models.json" with { type: "json" };
 import customModelsData from "./custom-models.json" with { type: "json" };
 import patchData from "./patch.json" with { type: "json" };
 import fs from "fs";
-import os from "os";
 import path from "path";
 
 // ─── Usage/Plan Types ────────────────────────────────────────────────────────
@@ -226,7 +225,7 @@ function buildModels(base: JsonModel[], custom: JsonModel[], patch: PatchData): 
 const PROVIDER_ID = "umans";
 const BASE_URL = "https://api.code.umans.ai/v1";
 const MODELS_INFO_URL = `${BASE_URL}/models/info`;
-const CACHE_DIR = path.join(os.homedir(), ".pi", "agent", "cache");
+const CACHE_DIR = path.join(getAgentDir(), "cache");
 const CACHE_PATH = path.join(CACHE_DIR, `${PROVIDER_ID}-models.json`);
 const LIVE_FETCH_TIMEOUT_MS = 8000;
 
