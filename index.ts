@@ -505,7 +505,7 @@ function resetIdleTimer(ctx: any): void {
   const signal = usageAbort?.signal;
   idleTimer = setTimeout(async () => {
     idleTimer = null;
-    // Skip while streaming — the optimistic value is in effect and agent_end
+    // Skip while streaming — the optimistic value is in effect and agent_settled
     // will reconcile with a real fetch.
     if (activeStreams > 0) return;
     if (signal?.aborted) return;
@@ -515,7 +515,7 @@ function resetIdleTimer(ctx: any): void {
   }, IDLE_POLL_MS);
 }
 
-// After agent_end the server still counts our session for a brief lag. Wait
+// After agent_settled the server still counts our session for a brief lag. Wait
 // it out, then take a clean idle baseline and re-arm the idle poll.
 function scheduleEndFetch(ctx: any): void {
   if (endFetchTimer) clearTimeout(endFetchTimer);
@@ -659,7 +659,7 @@ export default function (pi: ExtensionAPI) {
   // Optimistic +1: the moment our agent starts, we know the real concurrent
   // count is at least (others + 1). No API call — the server has a ~2s
   // registration lag, so fetching now would undercount us anyway. One span
-  // per prompt (agent_start → agent_end), so no flicker between tool turns.
+  // per prompt (agent_start → agent_settled), so no flicker between tool turns.
   pi.on("agent_start", async (_event, ctx) => {
     if (!isUmansModel(ctx)) return;
     if (idleTimer) {
@@ -672,7 +672,7 @@ export default function (pi: ExtensionAPI) {
 
   // Turn ended: drop our optimistic +1 and reconcile with the server after a
   // short settle so the server has dropped our session from its count.
-  pi.on("agent_end", async (_event, ctx) => {
+  pi.on("agent_settled", async (_event, ctx) => {
     if (!isUmansModel(ctx)) return;
     activeStreams = Math.max(0, activeStreams - 1);
     updateUsageStatus(ctx);
