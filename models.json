@@ -17,6 +17,22 @@
     "maxTokens": 32768
   },
   {
+    "id": "umans-deepseek-v4-pro-dspark",
+    "name": "Umans DeepSeek V4 Pro DSpark (experimental)",
+    "reasoning": true,
+    "input": [
+      "text"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 393216,
+    "maxTokens": 131071
+  },
+  {
     "id": "umans-flash",
     "name": "Umans Flash",
     "reasoning": true,
