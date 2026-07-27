@@ -67,6 +67,23 @@
     "maxTokens": 32768
   },
   {
+    "id": "umans-kimi-k3",
+    "name": "Umans Kimi K3 (prerelease)",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 131071
+  },
+  {
     "id": "umans-qwen3.6-35b-a3b",
     "name": "Umans Qwen3.6 35B A3B",
     "reasoning": true,
