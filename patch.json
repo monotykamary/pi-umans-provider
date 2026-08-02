@@ -1,6 +1,8 @@
 {
   "umans-coder": {
-    "thinkingLevelMap": { "off": "none" },
+    "thinkingLevelMap": {
+      "off": "none"
+    },
     "compat": {
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
@@ -8,15 +10,9 @@
     }
   },
   "umans-flash": {
-    "thinkingLevelMap": { "off": "none" },
-    "compat": {
-      "supportsDeveloperRole": false,
-      "supportsReasoningEffort": true,
-      "requiresReasoningContentOnAssistantMessages": true
-    }
-  },
-  "umans-kimi-k2.6": {
-    "thinkingLevelMap": { "off": "none" },
+    "thinkingLevelMap": {
+      "off": "none"
+    },
     "compat": {
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
@@ -24,15 +20,9 @@
     }
   },
   "umans-kimi-k2.7": {
-    "thinkingLevelMap": { "off": "none" },
-    "compat": {
-      "supportsDeveloperRole": false,
-      "supportsReasoningEffort": true,
-      "requiresReasoningContentOnAssistantMessages": true
-    }
-  },
-  "umans-glm-5.1": {
-    "thinkingLevelMap": { "off": "none" },
+    "thinkingLevelMap": {
+      "off": "none"
+    },
     "compat": {
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
@@ -40,15 +30,9 @@
     }
   },
   "umans-glm-5.2": {
-    "thinkingLevelMap": { "off": "none" },
-    "compat": {
-      "supportsDeveloperRole": false,
-      "supportsReasoningEffort": true,
-      "requiresReasoningContentOnAssistantMessages": true
-    }
-  },
-  "umans-glm-5.2-nvfp4": {
-    "thinkingLevelMap": { "off": "none" },
+    "thinkingLevelMap": {
+      "off": "none"
+    },
     "compat": {
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
@@ -56,11 +40,51 @@
     }
   },
   "umans-qwen3.6-35b-a3b": {
-    "thinkingLevelMap": { "off": "none" },
+    "thinkingLevelMap": {
+      "off": "none"
+    },
     "compat": {
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
       "requiresReasoningContentOnAssistantMessages": true
+    }
+  },
+  "umans-deepseek-v4-flash-0731": {
+    "reasoning": true,
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "high",
+      "medium": "high",
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compat": {
+      "thinkingFormat": "openai",
+      "maxTokensField": "max_tokens",
+      "supportsReasoningEffort": true
+    }
+  },
+  "umans-kimi-k3": {
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compat": {
+      "thinkingFormat": "openai",
+      "maxTokensField": "max_tokens",
+      "supportsReasoningEffort": true
     }
   }
 }
