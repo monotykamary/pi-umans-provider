@@ -18,7 +18,23 @@
   },
   {
     "id": "umans-deepseek-v4-flash-0731",
-    "name": "Umans DeepSeek V4 Flash (experimental)",
+    "name": "Umans DeepSeek V4 Flash",
+    "reasoning": true,
+    "input": [
+      "text"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 393215
+  },
+  {
+    "id": "umans-deepseek-v4-flash-0731-lab",
+    "name": "Umans DeepSeek V4 Flash (lab)",
     "reasoning": true,
     "input": [
       "text"
@@ -64,23 +80,6 @@
     },
     "contextWindow": 405504,
     "maxTokens": 131071
-  },
-  {
-    "id": "umans-kimi-k2.7",
-    "name": "Umans Kimi K2.7 Code",
-    "reasoning": true,
-    "input": [
-      "text",
-      "image"
-    ],
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "contextWindow": 262144,
-    "maxTokens": 32768
   },
   {
     "id": "umans-kimi-k3",

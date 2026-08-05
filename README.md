@@ -28,10 +28,10 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | Model | Base | Context | Vision | Reasoning | Max Output |
 |-------|------|---------|--------|-----------|------------|
 | Coder | Kimi K2.7-Code | 262K | ✅ | ✅ | 33K |
-| DeepSeek V4 Flash (experimental) | DeepSeek-V4-Flash | 1.0M | ❌ | ✅ | 393K |
+| DeepSeek V4 Flash | DeepSeek-V4-Flash | 1.0M | ❌ | ✅ | 393K |
+| DeepSeek V4 Flash (lab) | DeepSeek-V4-Flash | 1.0M | ❌ | ✅ | 393K |
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | GLM 5.2 | GLM-5.2 | 406K | ❌ | ✅ | 131K |
-| Kimi K2.7 Code | Kimi K2.7-Code | 262K | ✅ | ✅ | 33K |
 | Kimi K3 | Kimi K3 | 1.0M | ✅ | ✅ | 131K |
 | Qwen3.6 35B A3B | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 
