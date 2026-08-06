@@ -84,7 +84,8 @@ async function loginUmans(callbacks: OAuthLoginCallbacks): Promise<OAuthCredenti
   return { refresh: key, access: key, expires: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000 };
 }
 
-function refreshUmansToken(credentials: OAuthCredentials): Promise<OAuthCredentials> {
+function refreshUmansToken(credentials: OAuthCredentials, signal: AbortSignal): Promise<OAuthCredentials> {
+  if (signal.aborted) return Promise.reject(signal.reason);
   return Promise.resolve(credentials);
 }
 
