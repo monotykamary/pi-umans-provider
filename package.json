@@ -1,6 +1,6 @@
 {
   "name": "pi-umans-provider",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "UMANS provider extension for pi - Access Kimi K2.6, GLM 5.1, Qwen 3.6, and coding-optimized models through the UMANS API",
   "type": "module",
   "main": "index.ts",
@@ -31,10 +31,10 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^25.9.2",
-    "typescript": "^6.0.3",
     "@earendil-works/pi-ai": "0.84.1",
-    "@earendil-works/pi-coding-agent": "0.84.1"
+    "@earendil-works/pi-coding-agent": "0.84.1",
+    "@types/node": "^25.9.2",
+    "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@11.20.0",
   "peerDependencies": {
