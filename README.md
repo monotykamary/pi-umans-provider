@@ -33,6 +33,7 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | Kimi K3 | Kimi K3 | 1.0M | ✅ | ✅ | 131K |
 | Qwen3.6 35B A3B | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
+| Qwen3.8 27B (lab) | Qwen3.8-27B | 262K | ✅ | ✅ | 131K |
 
 > **Note:** `umans-flash-beta` is deprecated (sunset 2026-06-07). Use `umans-flash` instead.
 > `umans-qwen3.6-35b-a3b` is a technical alias for `umans-flash`.
