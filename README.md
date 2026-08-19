@@ -35,7 +35,6 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | DeepSeek V4 Pro 0813 (lab) | — | 1.0M | ❌ | ✅ | 393K |
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | GLM 5.2 | — | 406K | ❌ | ✅ | 131K |
-| Kimi K2.7 Code | — | 262K | ✅ | ✅ | 33K |
 | Kimi K3 | Kimi K3 | 1.0M | ✅ | ✅ | 131K |
 | Qwen3.6 35B A3B | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | Qwen3.8 27B (lab) | Qwen3.8-27B | 262K | ✅ | ✅ | 131K |
