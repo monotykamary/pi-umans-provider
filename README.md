@@ -29,15 +29,16 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 |-------|------|---------|--------|-----------|------------|
 | Coder | Kimi K2.7-Code | 262K | ✅ | ✅ | 33K |
 | DeepSeek V4 Flash | DeepSeek-V4-Flash | 1.0M | ❌ | ✅ | 393K |
-| DeepSeek V4 Flash (lab) | — | 1.0M | ❌ | ✅ | 393K |
 | DeepSeek V4 Flash Vision (lab) | — | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4 Pro | DeepSeek-V4-Pro-0813 | 1.0M | ❌ | ✅ | 393K |
 | DeepSeek V4 Pro 0813 (lab) | — | 1.0M | ❌ | ✅ | 393K |
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | GLM 5.2 | — | 406K | ❌ | ✅ | 131K |
+| GLM 5.3 Flash (lab) | GLM-5.3-Flash | 1.0M | ✅ | ✅ | 131K |
 | Kimi K3 | Kimi K3 | 1.0M | ✅ | ✅ | 131K |
 | Qwen3.6 35B A3B | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | Qwen3.8 27B (lab) | — | 262K | ✅ | ✅ | 131K |
+| Qwen3.8 Flash Next (lab) | Qwen3.8-Flash-Next | 262K | ✅ | ✅ | 131K |
 
 > **Note:** `umans-flash-beta` is deprecated (sunset 2026-06-07). Use `umans-flash` instead.
 > `umans-qwen3.6-35b-a3b` is a technical alias for `umans-flash`.
