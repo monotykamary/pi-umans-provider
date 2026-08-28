@@ -29,7 +29,6 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 |-------|------|---------|--------|-----------|------------|
 | Coder | Kimi K2.7-Code | 262K | ✅ | ✅ | 33K |
 | DeepSeek V4 Flash | DeepSeek-V4-Flash | 1.0M | ❌ | ✅ | 393K |
-| DeepSeek V4 Flash Vision (lab) | — | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4 Pro | DeepSeek-V4-Pro-0813 | 1.0M | ❌ | ✅ | 393K |
 | DeepSeek V4 Pro 0813 (lab) | — | 1.0M | ❌ | ✅ | 393K |
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |

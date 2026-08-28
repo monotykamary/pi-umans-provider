@@ -1,22 +1,4 @@
 {
-  "umans-deepseek-v4-flash-0731-vision-lab": {
-    "id": "umans-deepseek-v4-flash-0731-vision-lab",
-    "name": "Umans DeepSeek V4 Flash Vision (lab)",
-    "reasoning": true,
-    "input": [
-      "text",
-      "image"
-    ],
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "contextWindow": 1048576,
-    "maxTokens": 393215,
-    "deprecatedAt": "2026-08-14T02:00:18.070Z"
-  },
   "umans-deepseek-v4-pro-0813-lab": {
     "id": "umans-deepseek-v4-pro-0813-lab",
     "name": "Umans DeepSeek V4 Pro 0813 (lab)",
