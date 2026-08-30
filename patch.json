@@ -86,5 +86,21 @@
       "maxTokensField": "max_tokens",
       "supportsReasoningEffort": true
     }
+  },
+  "umans-glm-5.3-flash-lab": {
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compat": {
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "requiresReasoningContentOnAssistantMessages": true
+    }
   }
 }
