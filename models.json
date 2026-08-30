@@ -66,6 +66,22 @@
     "maxTokens": 32768
   },
   {
+    "id": "umans-glm-5.3",
+    "name": "Umans GLM 5.3",
+    "reasoning": true,
+    "input": [
+      "text"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 131071
+  },
+  {
     "id": "umans-glm-5.3-flash-lab",
     "name": "Umans GLM 5.3 Flash (lab)",
     "reasoning": true,
@@ -115,22 +131,5 @@
     },
     "contextWindow": 262144,
     "maxTokens": 32768
-  },
-  {
-    "id": "umans-qwen3.8-flash-next-lab",
-    "name": "Umans Qwen3.8 Flash Next (lab)",
-    "reasoning": true,
-    "input": [
-      "text",
-      "image"
-    ],
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "contextWindow": 262144,
-    "maxTokens": 131071
   }
 ]
