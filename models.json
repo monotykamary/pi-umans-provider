@@ -33,6 +33,23 @@
     "maxTokens": 393215
   },
   {
+    "id": "umans-deepseek-v4-flash-vision-exp-lab",
+    "name": "Umans DeepSeek V4 Flash Vision Exp (lab)",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 393215
+  },
+  {
     "id": "umans-deepseek-v4-pro-0813",
     "name": "Umans DeepSeek V4 Pro",
     "reasoning": true,
