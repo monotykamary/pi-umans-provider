@@ -16,5 +16,23 @@
     "contextWindow": 262144,
     "maxTokens": 131071,
     "deprecatedAt": "2026-08-30T02:00:20.775Z"
+  },
+  "umans-glm-5.3-flash-lab": {
+    "id": "umans-glm-5.3-flash-lab",
+    "name": "Umans GLM 5.3 Flash (lab)",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 131071,
+    "deprecatedAt": "2026-09-10T02:00:23.118Z"
   }
 }

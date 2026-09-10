@@ -13,7 +13,7 @@
       "cacheRead": 0,
       "cacheWrite": 0
     },
-    "contextWindow": 262144,
+    "contextWindow": 1048576,
     "maxTokens": 32768
   },
   {
@@ -99,8 +99,8 @@
     "maxTokens": 131071
   },
   {
-    "id": "umans-glm-5.3-flash-lab",
-    "name": "Umans GLM 5.3 Flash (lab)",
+    "id": "umans-glm-5.3-flash",
+    "name": "Umans GLM 5.3 Flash",
     "reasoning": true,
     "input": [
       "text",
