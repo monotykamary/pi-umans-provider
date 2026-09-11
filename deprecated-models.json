@@ -34,5 +34,40 @@
     "contextWindow": 1048576,
     "maxTokens": 131071,
     "deprecatedAt": "2026-09-10T02:00:23.118Z"
+  },
+  "umans-deepseek-v4-flash-vision-exp-lab": {
+    "id": "umans-deepseek-v4-flash-vision-exp-lab",
+    "name": "Umans DeepSeek V4 Flash Vision Exp (lab)",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 393215,
+    "deprecatedAt": "2026-09-11T02:00:26.194Z"
+  },
+  "umans-deepseek-v4-pro-0813": {
+    "id": "umans-deepseek-v4-pro-0813",
+    "name": "Umans DeepSeek V4 Pro",
+    "reasoning": true,
+    "input": [
+      "text"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 393215,
+    "deprecatedAt": "2026-09-11T02:00:26.194Z"
   }
 }
