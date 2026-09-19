@@ -31,6 +31,7 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | DeepSeek V4 Flash | DeepSeek-V4-Flash | 1.0M | ❌ | ✅ | 393K |
 | DeepSeek V4 Flash Vision Exp (lab) | — | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4 Pro | — | 1.0M | ❌ | ✅ | 393K |
+| DeepSeek V4.1 Flash | DeepSeek-V4.1-Flash | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4.1 Flash (lab) | DeepSeek-V4.1-Flash | 1.0M | ✅ | ✅ | 393K |
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | GLM 5.3 | GLM-5.3 | 1.0M | ❌ | ✅ | 131K |

@@ -33,6 +33,23 @@
     "maxTokens": 393215
   },
   {
+    "id": "umans-deepseek-v4.1-flash",
+    "name": "Umans DeepSeek V4.1 Flash",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 393215
+  },
+  {
     "id": "umans-deepseek-v4.1-flash-lab",
     "name": "Umans DeepSeek V4.1 Flash (lab)",
     "reasoning": true,
