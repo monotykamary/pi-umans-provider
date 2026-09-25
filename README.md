@@ -36,7 +36,6 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
 | GLM 5.3 | GLM-5.3 | 1.0M | ❌ | ✅ | 131K |
 | GLM 5.3 Flash | GLM-5.3-Flash | 1.0M | ✅ | ✅ | 131K |
-| GLM 5.3 Flash (lab) | — | 1.0M | ✅ | ✅ | 131K |
 | Kimi K3 | Kimi K3 | 1.0M | ✅ | ✅ | 131K |
 | MiMo V2.6 Pro (lab) | MiMo-V2.6-Pro-RL | 1.0M | ✅ | ✅ | 131K |
 | Qwen3.6 35B A3B | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
