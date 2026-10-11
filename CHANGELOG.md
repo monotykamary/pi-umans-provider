@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.36
 
 - `/login` while the session-start catalog revalidation is still in flight now fetches the new key's catalog right away: the forced refresh aborts the old-key revalidation and waits for it to release the sync lock instead of skipping as "locked" until the next session start.
 
