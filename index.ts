@@ -428,6 +428,9 @@ async function revalidateModels(
 
 let cachedApiKey: string | undefined;
 let revalidateAbort: AbortController | null = null;
+// The in-flight catalog revalidation (session start or /login); it never rejects.
+let modelSync: Promise<void> = Promise.resolve();
+let modelSyncAbort: AbortController | null = null;
 // Aborted on session replacement/shutdown so in-flight usage fetches from
 // timers don't resolve against a stale ctx (the timer handle itself can't be
 // clearTimeout'd once the async callback has already fired).
@@ -675,6 +678,14 @@ export default function (pi: ExtensionAPI) {
     });
   }
 
+  // The catalog sync's own abort scope inside the session's: a /login cancels
+  // an in-flight (old-key) sync without cancelling the session's usage fetch.
+  function supersedeModelSync(session: AbortSignal): AbortSignal {
+    modelSyncAbort?.abort();
+    modelSyncAbort = new AbortController();
+    return AbortSignal.any([session, modelSyncAbort.signal]);
+  }
+
   // After /login: revalidate with the new key right away (forced past the TTL,
   // still single-flight). Deferred so pi stores the credential first; never
   // awaited, never throws into the login flow.
@@ -684,8 +695,11 @@ export default function (pi: ExtensionAPI) {
       const key = credentials.access;
       cachedApiKey = key;
       if (!revalidateAbort || revalidateAbort.signal.aborted) revalidateAbort = new AbortController();
-      const signal = revalidateAbort.signal;
-      void revalidateModels(key, embeddedModels, signal, true)
+      // The new key supersedes an in-flight revalidation, which must release its
+      // sync lock first, or this forced refresh would skip as "locked".
+      const signal = supersedeModelSync(revalidateAbort.signal);
+      modelSync = modelSync
+        .then(() => (signal.aborted ? null : revalidateModels(key, embeddedModels, signal, true)))
         .then((freshBase) => {
           if (freshBase && !signal.aborted) registerFresh(freshBase);
         })
@@ -777,10 +791,11 @@ export default function (pi: ExtensionAPI) {
     const signal = revalidateAbort.signal;
     const keyResolved = resolveApiKey(ctx.modelRegistry);
 
-    void keyResolved
-      .then(() => revalidateModels(cachedApiKey, embeddedModels, signal))
+    const syncSignal = supersedeModelSync(signal);
+    modelSync = keyResolved
+      .then(() => revalidateModels(cachedApiKey, embeddedModels, syncSignal))
       .then((freshBase) => {
-        if (freshBase && !signal.aborted) registerFresh(freshBase);
+        if (freshBase && !syncSignal.aborted) registerFresh(freshBase);
       })
       .catch(() => { /* keep serving the stale catalog */ });
 

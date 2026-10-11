@@ -65,7 +65,7 @@ function writeCache(ageMs: number, models: unknown[] = embeddedModels, fingerpri
   }
 }
 
-function stubFetch(impl: (url?: unknown) => Promise<Response> = async (url) => (isUsageUrl(url) ? usageResponse() : liveModelsResponse())) {
+function stubFetch(impl: (url?: unknown, init?: RequestInit) => Promise<Response> = async (url) => (isUsageUrl(url) ? usageResponse() : liveModelsResponse())) {
   const fetch = vi.fn(impl);
   vi.stubGlobal("fetch", fetch);
   return fetch;
@@ -297,6 +297,32 @@ describe("umans: /login and usage polling", () => {
     await vi.waitFor(() => expect(hasLiveModel(ext.registrations.at(-1))).toBe(true));
     expect(modelCalls(fetch)).toBe(1);
     expect(JSON.parse(fs.readFileSync(syncMetaPath(cachePath), "utf8")).keyFingerprint).toBe(keyFingerprint("sk-after-login"));
+  });
+
+  it("fetches the new key's catalog when /login races the session revalidation holding the lock", async () => {
+    setupHome();
+    writeCache(2 * HOUR);
+    const pending: Array<() => void> = [];
+    const fetch = stubFetch((url, init?: RequestInit) => new Promise<Response>((resolve, reject) => {
+      const signal = init?.signal;
+      signal?.addEventListener("abort", () => reject(signal.reason));
+      pending.push(() => resolve(isUsageUrl(url) ? usageResponse() : liveModelsResponse()));
+    }));
+    const ext = await loadExtension();
+    await ext.startSession(interactive);
+    await vi.waitFor(() => expect(modelCalls(fetch)).toBe(1)); // session sync in flight, lock held
+    await vi.waitFor(() => expect(usageCalls(fetch)).toBe(1));
+    const login = (ext.registrations[0] as any).oauth.login;
+    await login({ onPrompt: async () => "sk-new-login-key" });
+    await vi.waitFor(() => expect(modelCalls(fetch)).toBe(2));
+    for (const release of pending) release();
+    await vi.waitFor(() => expect(hasLiveModel(ext.registrations.at(-1))).toBe(true));
+    // Superseding the catalog sync leaves the session's usage footer fetch alone.
+    await vi.waitFor(() => expect(ext.setStatus).toHaveBeenCalledWith("umans-usage", expect.stringContaining("Code Max")));
+    const modelRequests = fetch.mock.calls.filter(([url]) => !isUsageUrl(url)) as any[][];
+    expect(modelRequests[1][1].headers.Authorization).toBe("Bearer sk-new-login-key");
+    expect(JSON.parse(fs.readFileSync(syncMetaPath(cachePath), "utf8")).keyFingerprint).toBe(keyFingerprint("sk-new-login-key"));
+    expect(fs.existsSync(syncLockPath(cachePath))).toBe(false);
   });
 
   it("does not poll usage without a UI (print mode, child agents)", async () => {
