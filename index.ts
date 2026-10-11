@@ -19,6 +19,10 @@
  * Model resolution strategy: Stale-While-Revalidate
  *   1. Serve stale immediately: disk cache → embedded models.json (zero-latency)
  *   2. Revalidate in background: live API /v1/models/info → merge with embedded → cache → hot-swap
+ *      Quiet startup sync (sync-policy.ts): only with an API key, only when the
+ *      disk cache is older than the TTL (1h, PI_PROVIDER_SYNC_TTL_MS) or the key
+ *      changed, and only one pi process at a time (lock file next to the cache).
+ *      /login forces a revalidation with the new key.
  *   3. patch.json + custom-models.json applied on top of whichever source won
  *
  * Merge order: [live|cache|embedded] → apply patch.json → merge custom-models.json
@@ -45,6 +49,14 @@ import patchData from "./patch.json" with { type: "json" };
 import deprecatedData from "./deprecated-models.json" with { type: "json" };
 import fs from "fs";
 import path from "path";
+import {
+  acquireModelSync,
+  cacheChangedSinceLoad,
+  keyFingerprint,
+  markCacheLoaded,
+  syncMetaPath,
+  writeFileAtomic,
+} from "./sync-policy";
 
 // ─── Usage/Plan Types ────────────────────────────────────────────────────────
 
@@ -53,6 +65,15 @@ const USAGE_FETCH_TIMEOUT_MS = 5000;
 const USAGE_THROTTLE_MS = 30_000;
 const END_SETTLE_MS = 2000;
 const IDLE_POLL_MS = 45_000;
+/**
+ * Startup usage dedupe window. Every interactive session_start used to call
+ * /v1/usage; now one process per window fetches and writes the result to
+ * `cache/umans-usage.json`, and sessions started inside the window (/new,
+ * /reload, a second terminal) render it from disk. 60s: the plan name and
+ * request budget barely move, and the concurrent-session baseline is refreshed
+ * by the idle poll (IDLE_POLL_MS) and after every agent run anyway.
+ */
+const USAGE_SYNC_TTL_MS = 60_000;
 
 let sessionPlan: string | null = null;
 let sessionConcurrency: number | null = null;
@@ -287,7 +308,8 @@ function loadCachedModels(): JsonModel[] | null {
 function cacheModels(models: JsonModel[]): void {
   try {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
-    fs.writeFileSync(CACHE_PATH, JSON.stringify(models, null, 2) + "\n");
+    // Atomic (tmp + rename): other pi processes may be reading the cache right now.
+    writeFileAtomic(CACHE_PATH, JSON.stringify(models, null, 2) + "\n");
   } catch {
     // Cache write failure is non-fatal
   }
@@ -359,6 +381,7 @@ function withDeprecated(models: JsonModel[]): JsonModel[] {
 }
 
 function loadStaleModels(embeddedModels: JsonModel[]): JsonModel[] {
+  markCacheLoaded(CACHE_PATH); // stat before read: lets session_start spot newer caches
   const cached = loadCachedModels();
   if (!cached || cached.length === 0) return embeddedModels;
 
@@ -371,17 +394,34 @@ function loadStaleModels(embeddedModels: JsonModel[]): JsonModel[] {
   return cached;
 }
 
+/**
+ * Background revalidation, gated by the quiet startup sync policy
+ * (sync-policy.ts): no key → no fetch; fresh cache (TTL) → no fetch; another
+ * process already fetching → no fetch. When skipped, a cache that another
+ * process refreshed since we loaded it is adopted from disk instead.
+ * `force` bypasses the TTL (e.g. after /login); it is still single-flight.
+ *
+ * The Umans "OAuth" credential is the API key itself (access === refresh, never
+ * rotated), so it doubles as the stable identity for the key fingerprint.
+ */
 async function revalidateModels(
   apiKey: string | undefined,
   embeddedModels: JsonModel[],
   signal?: AbortSignal,
+  force = false,
 ): Promise<JsonModel[] | null> {
-  if (!apiKey) return null;
-  const liveModels = await fetchLiveModels(apiKey, signal);
-  if (!liveModels || liveModels.length === 0) return null;
-  const merged = mergeWithEmbedded(liveModels, embeddedModels);
-  cacheModels(merged);
-  return merged;
+  const lease = acquireModelSync({ cachePath: CACHE_PATH, apiKey, force });
+  if (!lease) return cacheChangedSinceLoad(CACHE_PATH) ? loadStaleModels(embeddedModels) : null;
+  let merged: JsonModel[] | null = null;
+  try {
+    const liveModels = apiKey ? await fetchLiveModels(apiKey, signal) : null;
+    if (!liveModels || liveModels.length === 0) return null;
+    merged = mergeWithEmbedded(liveModels, embeddedModels);
+    cacheModels(merged);
+    return merged;
+  } finally {
+    lease.release(merged ? "fetched" : signal?.aborted ? "aborted" : "failed");
+  }
 }
 
 // ─── API Key Resolution ────────────────────────────────────────────────────────
@@ -442,6 +482,59 @@ async function fetchUsage(
     return data;
   } catch {
     return null;
+  }
+}
+
+// ─── Shared usage snapshot (cross-process startup dedupe) ─────────────────────
+
+const USAGE_CACHE_PATH = path.join(CACHE_DIR, `${PROVIDER_ID}-usage.json`);
+
+/** Read the usage snapshot another process wrote — only if it was fetched with this key. */
+function readUsageCache(apiKey: string): UmansUsage | null {
+  try {
+    const meta = JSON.parse(fs.readFileSync(syncMetaPath(USAGE_CACHE_PATH), "utf8"));
+    if (meta?.keyFingerprint !== keyFingerprint(apiKey)) return null;
+    const data = JSON.parse(fs.readFileSync(USAGE_CACHE_PATH, "utf8")) as UmansUsage;
+    return data?.plan?.slug ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeUsageCache(usage: UmansUsage): void {
+  try {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+    writeFileAtomic(USAGE_CACHE_PATH, JSON.stringify(usage) + "\n");
+  } catch {
+    // Non-fatal: other processes just fetch for themselves next time.
+  }
+}
+
+/**
+ * Usage for session_start: one pi process per USAGE_SYNC_TTL_MS window calls
+ * /v1/usage (same lease/lock/backoff policy as the model sync, own cache
+ * file); the others render the snapshot it wrote. Never fetches without a key.
+ * `fetched` is false when this process skipped the network.
+ */
+async function startupUsage(
+  apiKey: string | undefined,
+  signal: AbortSignal,
+): Promise<{ usage: UmansUsage | null; fetched: boolean }> {
+  if (!apiKey) return { usage: null, fetched: false };
+  const lease = acquireModelSync({
+    cachePath: USAGE_CACHE_PATH,
+    apiKey,
+    ttlMs: USAGE_SYNC_TTL_MS,
+    isValidCache: (data) => data != null,
+  });
+  if (!lease) return { usage: readUsageCache(apiKey), fetched: false };
+  let usage: UmansUsage | null = null;
+  try {
+    usage = await throttledFetchUsage(apiKey, { force: true, signal });
+    if (usage) writeUsageCache(usage);
+    return { usage, fetched: true };
+  } finally {
+    lease.release(usage ? "fetched" : signal.aborted ? "aborted" : "failed");
   }
 }
 
@@ -573,6 +666,34 @@ export default function (pi: ExtensionAPI) {
   const staleBase = loadStaleModels(embeddedModels);
   const staleModels = buildModels(staleBase, customModels, patches);
 
+  function registerFresh(freshBase: JsonModel[]): void {
+    pi.registerProvider("umans", {
+      baseUrl: BASE_URL,
+      apiKey: "$UMANS_API_KEY",
+      api: "openai-completions",
+      models: buildModels(freshBase, customModels, patches),
+    });
+  }
+
+  // After /login: revalidate with the new key right away (forced past the TTL,
+  // still single-flight). Deferred so pi stores the credential first; never
+  // awaited, never throws into the login flow.
+  async function loginAndRevalidate(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials> {
+    const credentials = await loginUmans(callbacks);
+    setTimeout(() => {
+      const key = credentials.access;
+      cachedApiKey = key;
+      if (!revalidateAbort || revalidateAbort.signal.aborted) revalidateAbort = new AbortController();
+      const signal = revalidateAbort.signal;
+      void revalidateModels(key, embeddedModels, signal, true)
+        .then((freshBase) => {
+          if (freshBase && !signal.aborted) registerFresh(freshBase);
+        })
+        .catch(() => { /* keep serving the current catalog */ });
+    }, 0);
+    return credentials;
+  }
+
   pi.registerProvider("umans", {
     baseUrl: BASE_URL,
     apiKey: "$UMANS_API_KEY",
@@ -580,7 +701,7 @@ export default function (pi: ExtensionAPI) {
     models: staleModels,
     oauth: {
       name: "Umans AI (API Key)",
-      login: loginUmans,
+      login: loginAndRevalidate,
       refreshToken: refreshUmansToken,
       getApiKey: getApiKey,
     },
@@ -644,6 +765,8 @@ export default function (pi: ExtensionAPI) {
     return p;
   });
 
+  // Fire-and-forget: never await network here — startup must not block on the
+  // provider API. Nothing is awaited and every rejection is swallowed.
   pi.on("session_start", async (_event, ctx) => {
     revalidateAbort?.abort();
     revalidateAbort = new AbortController();
@@ -652,32 +775,37 @@ export default function (pi: ExtensionAPI) {
     usageAbort?.abort();
     usageAbort = new AbortController();
     const signal = revalidateAbort.signal;
-    resolveApiKey(ctx.modelRegistry).then(async () => {
-      revalidateModels(cachedApiKey, embeddedModels, signal).then((freshBase) => {
-        if (freshBase && !signal.aborted) {
-          pi.registerProvider("umans", {
-            baseUrl: BASE_URL,
-            apiKey: "$UMANS_API_KEY",
-            api: "openai-completions",
-            models: buildModels(freshBase, customModels, patches),
-          });
+    const keyResolved = resolveApiKey(ctx.modelRegistry);
+
+    void keyResolved
+      .then(() => revalidateModels(cachedApiKey, embeddedModels, signal))
+      .then((freshBase) => {
+        if (freshBase && !signal.aborted) registerFresh(freshBase);
+      })
+      .catch(() => { /* keep serving the stale catalog */ });
+
+    // Usage footer: interactive sessions only (no footer in print mode or
+    // headless child agents, so no /v1/usage call there either).
+    void keyResolved
+      .then(async () => {
+        if (!isUmansModel(ctx)) {
+          clearUsageStatus(ctx);
+          return;
         }
-      });
-
-      if (!isUmansModel(ctx)) {
-        clearUsageStatus(ctx);
-        return;
-      }
-
-      const usage = await throttledFetchUsage(cachedApiKey, { force: true, signal });
-      if (usage && !signal.aborted) {
-        applyUsage(usage, ctx);
-      }
-    });
+        if (!ctx.hasUI) return;
+        const { usage, fetched } = await startupUsage(cachedApiKey, signal);
+        if (signal.aborted) return;
+        if (usage) applyUsage(usage, ctx);
+        // Skipped the network and nothing usable on disk yet (another process
+        // is fetching right now): let the idle poll fill the footer in.
+        else if (!fetched && cachedApiKey) resetIdleTimer(ctx);
+      })
+      .catch(() => { /* the footer stays empty */ });
   });
 
   pi.on("model_select", (event, ctx) => {
     if (event.model?.provider === "umans") {
+      if (!ctx.hasUI) return; // no footer to render without a UI
       throttledFetchUsage(cachedApiKey, { force: true }).then((usage) => {
         if (usage) {
           applyUsage(usage, ctx);
@@ -695,7 +823,7 @@ export default function (pi: ExtensionAPI) {
   // registration lag, so fetching now would undercount us anyway. One span
   // per prompt (agent_start → agent_settled), so no flicker between tool turns.
   pi.on("agent_start", async (_event, ctx) => {
-    if (!isUmansModel(ctx)) return;
+    if (!isUmansModel(ctx) || !ctx.hasUI) return;
     if (idleTimer) {
       clearTimeout(idleTimer);
       idleTimer = null;
@@ -707,7 +835,7 @@ export default function (pi: ExtensionAPI) {
   // Turn ended: drop our optimistic +1 and reconcile with the server after a
   // short settle so the server has dropped our session from its count.
   pi.on("agent_settled", async (_event, ctx) => {
-    if (!isUmansModel(ctx)) return;
+    if (!isUmansModel(ctx) || !ctx.hasUI) return;
     activeStreams = Math.max(0, activeStreams - 1);
     updateUsageStatus(ctx);
     scheduleEndFetch(ctx);

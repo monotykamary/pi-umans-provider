@@ -22,6 +22,7 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 - **Streaming** - Real-time token streaming
 - **Subscription-based** - All models included in your plan, no per-token cost
 - **Usage status bar** — Displays your plan, concurrent sessions, and remaining requests in the pi footer
+- **Quiet live model sync** — Models refresh from the UMANS API in the background, at most hourly and by one pi process at a time ([details](#model-sync))
 
 ## Available Models
 
@@ -105,6 +106,7 @@ Get your API key from [code.umans.ai](https://code.umans.ai).
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `UMANS_API_KEY` | No | Your UMANS API key (fallback if not in auth.json) |
+| `PI_PROVIDER_SYNC_TTL_MS` | No | Model sync freshness window in ms (default `3600000`; `0` = revalidate every session start) |
 
 ## Configuration
 
@@ -157,6 +159,23 @@ Code Max (Founding Seat) | ⟠ 1/4
 - **`⇄ N`** — Remaining requests in the current window (shown when limited)
 
 The concurrent-session count is tracked locally: it's optimistically incremented the moment an agent run starts (no API call needed — the server has a brief registration lag anyway), reconciled with UMANS's `/v1/usage` endpoint after each agent run ends, and lightly polled while idle so the baseline stays fresh. The plan name and request budget are fetched on session start and model selection.
+
+The footer (and every `/v1/usage` call) is interactive-only: print mode (`pi -p`) and headless child agents never poll. On session start, one pi process per 60 seconds calls `/v1/usage` and writes the result to `~/.pi/agent/cache/umans-usage.json` (with the same lock and key fingerprint as the model sync); other sessions started within that window render it from disk.
+
+## Model sync
+
+Startup never waits on the network. pi starts with the cached catalog (`~/.pi/agent/cache/umans-models.json`,
+falling back to the bundled `models.json`) and revalidates against `/v1/models/info` in the background — only when:
+
+- a UMANS API key is configured (no key, no request),
+- the cache is older than 1 hour, missing, or was fetched with a different API key, and
+- no other pi process is already refreshing it (an `umans-models.lock` file next to the cache).
+
+So `/new`, `/reload`, `pi -p` and fan-out child agents share one cache instead of each calling the API; a
+session that skips the fetch still picks up a cache another process refreshed. Logging in with `/login` revalidates
+right away. A failed refresh is retried after 5 minutes at the earliest. `PI_PROVIDER_SYNC_TTL_MS` changes the
+window (`0` revalidates on every session start). Only a hash fingerprint of the key is stored
+(`umans-models.sync.json`), never the key itself.
 
 ## API Compatibility
 
