@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.37
+
+- Pin Pi SDK development dependencies to 1.2.0 while retaining wildcard host peers; verify real manifest loading, lifecycle and native/bundled Pi hosts offline.
+
 ## 1.0.36
 
 - `/login` while the session-start catalog revalidation is still in flight now fetches the new key's catalog right away: the forced refresh aborts the old-key revalidation and waits for it to release the sync lock instead of skipping as "locked" until the next session start.
