@@ -16,5 +16,23 @@
     "contextWindow": 1048576,
     "maxTokens": 131071,
     "deprecatedAt": "2026-10-09T00:00:27.031Z"
+  },
+  "umans-deepseek-v4.1-flash-lab": {
+    "id": "umans-deepseek-v4.1-flash-lab",
+    "name": "Umans DeepSeek V4.1 Flash (lab)",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 393215,
+    "deprecatedAt": "2026-10-18T04:17:35.766Z"
   }
 }
