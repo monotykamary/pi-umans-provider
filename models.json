@@ -50,8 +50,8 @@
     "maxTokens": 393215
   },
   {
-    "id": "umans-deepseek-v4.1-flash-1017-lab",
-    "name": "Umans DeepSeek V4.1 Flash 1017 (lab)",
+    "id": "umans-deepseek-v4.1-flash-1017",
+    "name": "Umans DeepSeek V4.1 Flash 1017",
     "reasoning": true,
     "input": [
       "text",
