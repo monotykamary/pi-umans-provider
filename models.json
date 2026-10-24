@@ -17,22 +17,6 @@
     "maxTokens": 32768
   },
   {
-    "id": "umans-deepseek-v4-flash-0731",
-    "name": "Umans DeepSeek V4 Flash",
-    "reasoning": true,
-    "input": [
-      "text"
-    ],
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "contextWindow": 1048576,
-    "maxTokens": 393215
-  },
-  {
     "id": "umans-deepseek-v4.1-flash",
     "name": "Umans DeepSeek V4.1 Flash",
     "reasoning": true,
@@ -100,23 +84,6 @@
     "maxTokens": 131071
   },
   {
-    "id": "umans-glm-5.3-flash",
-    "name": "Umans GLM 5.3 Flash",
-    "reasoning": true,
-    "input": [
-      "text",
-      "image"
-    ],
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "contextWindow": 1048576,
-    "maxTokens": 131071
-  },
-  {
     "id": "umans-kimi-k3",
     "name": "Umans Kimi K3",
     "reasoning": true,
@@ -132,22 +99,5 @@
     },
     "contextWindow": 1048576,
     "maxTokens": 131071
-  },
-  {
-    "id": "umans-qwen3.6-35b-a3b",
-    "name": "Umans Qwen3.6 35B A3B",
-    "reasoning": true,
-    "input": [
-      "text",
-      "image"
-    ],
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "contextWindow": 262144,
-    "maxTokens": 32768
   }
 ]
