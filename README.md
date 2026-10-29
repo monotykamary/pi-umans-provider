@@ -28,13 +28,13 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 
 | Model | Base | Context | Vision | Reasoning | Max Output |
 |-------|------|---------|--------|-----------|------------|
-| Coder | GLM-5.3-Flash | 1.0M | ✅ | ✅ | 33K |
+| Coder | DeepSeek-V4.1-Flash-1017 | 1.0M | ✅ | ✅ | 33K |
 | DeepSeek V4 Flash | — | 1.0M | ❌ | ✅ | 393K |
 | DeepSeek V4.1 Flash | DeepSeek-V4.1-Flash-1017 | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4.1 Flash (lab) | — | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4.1 Flash 1017 | DeepSeek-V4.1-Flash-1017 | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4.1 Flash 1017 (lab) | — | 1.0M | ✅ | ✅ | 393K |
-| Flash | Qwen3.6-35B-A3B | 262K | ✅ | ✅ | 33K |
+| Flash | DeepSeek-V4.1-Flash-1017 | 262K | ✅ | ✅ | 33K |
 | GLM 5.3 | GLM-5.3 | 1.0M | ❌ | ✅ | 131K |
 | GLM 5.3 Flash | — | 1.0M | ✅ | ✅ | 131K |
 | Kimi K3 | Kimi K3 | 1.0M | ✅ | ✅ | 131K |
