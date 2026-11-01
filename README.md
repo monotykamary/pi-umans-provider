@@ -31,7 +31,6 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | Coder | DeepSeek-V4.1-Flash-1017 | 1.0M | ✅ | ✅ | 33K |
 | DeepSeek V4 Flash | — | 1.0M | ❌ | ✅ | 393K |
 | DeepSeek V4.1 Flash | DeepSeek-V4.1-Flash-1017 | 1.0M | ✅ | ✅ | 393K |
-| DeepSeek V4.1 Flash (lab) | — | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4.1 Flash 1017 | DeepSeek-V4.1-Flash-1017 | 1.0M | ✅ | ✅ | 393K |
 | DeepSeek V4.1 Flash 1017 (lab) | — | 1.0M | ✅ | ✅ | 393K |
 | Flash | DeepSeek-V4.1-Flash-1017 | 262K | ✅ | ✅ | 33K |
