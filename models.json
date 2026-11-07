@@ -84,8 +84,8 @@
     "maxTokens": 131071
   },
   {
-    "id": "umans-kimi-k3",
-    "name": "Umans Kimi K3",
+    "id": "umans-kimi-k3.1-pro",
+    "name": "Umans Kimi K3.1 Pro",
     "reasoning": true,
     "input": [
       "text",
