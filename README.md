@@ -35,7 +35,7 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | GLM 5.3 | GLM-5.3 | 1.0M | ❌ | ✅ | 131K |
 | Kimi K3 | — | 1.0M | ✅ | ✅ | 131K |
 | Kimi K3.1 Pro | Kimi K3.1 Pro | 1.0M | ✅ | ✅ | 131K |
-| Kimi K3.1 Pro (lab) | Kimi K3.1 Pro | 1.0M | ✅ | ✅ | 131K |
+| Kimi K3.1 Pro (lab) | — | 1.0M | ✅ | ✅ | 131K |
 
 > **Note:** `umans-flash-beta` is deprecated (sunset 2026-06-07). Use `umans-flash` instead.
 > `umans-qwen3.6-35b-a3b` is a technical alias for `umans-flash`.
