@@ -1,22 +1,4 @@
 {
-  "umans-kimi-k3": {
-    "id": "umans-kimi-k3",
-    "name": "Umans Kimi K3",
-    "reasoning": true,
-    "input": [
-      "text",
-      "image"
-    ],
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "contextWindow": 1048576,
-    "maxTokens": 131071,
-    "deprecatedAt": "2026-11-07T05:46:19.914Z"
-  },
   "umans-kimi-k3.1-pro-lab": {
     "id": "umans-kimi-k3.1-pro-lab",
     "name": "Umans Kimi K3.1 Pro (lab)",

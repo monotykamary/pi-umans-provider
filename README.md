@@ -33,7 +33,6 @@ _A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension wi
 | DeepSeek V4.1 Flash 1017 | DeepSeek-V4.1-Flash-1017 | 1.0M | ✅ | ✅ | 393K |
 | Flash | DeepSeek-V4.1-Flash-1017 | 262K | ✅ | ✅ | 33K |
 | GLM 5.3 | GLM-5.3 | 1.0M | ❌ | ✅ | 131K |
-| Kimi K3 | — | 1.0M | ✅ | ✅ | 131K |
 | Kimi K3.1 Pro | Kimi K3.1 Pro | 1.0M | ✅ | ✅ | 131K |
 | Kimi K3.1 Pro (lab) | — | 1.0M | ✅ | ✅ | 131K |
 
